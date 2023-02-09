@@ -1,0 +1,17 @@
+{
+	"database": {
+		"datasource": "whitejs",
+		"port": 3306,
+		"username": "whitejs",
+		"password": "whitejs1234__"
+	},
+	"server": {
+		"adminIp": [],
+		"loginPort": 8484
+	},
+	"game": {
+		"expRate": 10,
+		"dropRate": 10,
+		"mesoRate": 10
+	}
+}

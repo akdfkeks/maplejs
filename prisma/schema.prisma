@@ -1,0 +1,89 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id              Int         @id @default(autoincrement()) @db.UnsignedInt
+  email           String?     @unique @db.VarChar(256)
+  name            String      @unique @db.VarChar(50)
+  password        String      @default("") @db.VarChar(256)
+  second_password String?     @db.VarChar(256)
+  gm              Int         @default(0) @db.UnsignedTinyInt
+  gender          Int         @default(0) @db.UnsignedTinyInt
+  logged_in       Boolean     @default(false)
+  last_login      DateTime?   @db.Timestamp
+  last_ip         String      @db.VarChar(64)
+  created_at      DateTime    @default(now()) @db.Timestamp
+  birthday        DateTime    @db.Date
+  mac_address     String?     @db.TinyText
+  cash            Int         @default(0) @db.UnsignedMediumInt
+  point           Int         @default(0) @db.UnsignedMediumInt
+  Charactor       Character[]
+}
+
+model Character {
+  id             Int      @id @default(autoincrement()) @db.UnsignedInt
+  name           String   @unique
+  acccount       Account  @relation(fields: [account_id], references: [id])
+  account_id     Int      @db.UnsignedInt
+  world          Int      @default(0) @db.UnsignedTinyInt
+  level          Int      @default(0) @db.UnsignedTinyInt
+  exp            Int      @default(0) @db.UnsignedInt
+  ap             Int      @default(0)
+  // sp             String   @default("0,0,0,0,0,0,0,0,0,0") @db.VarChar(255)
+  sp             Int      @default(0)
+  str            Int      @default(0)
+  dex            Int      @default(0)
+  luk            Int      @default(0)
+  int            Int      @default(0)
+  hp             Int      @default(0)
+  mp             Int      @default(0)
+  max_hp         Int      @default(0)
+  max_mp         Int      @default(0)
+  hp_apUsed      Int      @default(0)
+  meso           Int      @default(0) @db.UnsignedInt
+  job            Int      @default(0) @db.UnsignedTinyInt
+  gender         Int      @default(0) @db.UnsignedTinyInt
+  fame           Int      @default(0) @db.MediumInt
+  skin           Int      @default(0) @db.UnsignedTinyInt
+  hair           Int      @default(0)
+  face           Int      @default(0)
+  map            Int      @default(0)
+  spawn_point    Int      @default(0)
+  gm             Int      @default(0) @db.UnsignedTinyInt
+  party          Int      @default(0)
+  buddy_capacity Int      @default(25)
+  created_at     DateTime @default(now()) @db.Timestamp
+
+  inventory_item InventoryItem[]
+  inventory_slot InventorySlot?
+}
+
+model InventoryItem {
+  id             Int       @id @default(autoincrement()) @db.UnsignedInt
+  character      Character @relation(fields: [character_id], references: [id], onDelete: Cascade)
+  character_id   Int       @db.UnsignedInt
+  item_id        Int       @default(0) @db.Int
+  inventory_type Int       @default(0) @db.Int
+  position       Int       @default(0)
+  quantity       Int       @default(0)
+}
+
+model InventorySlot {
+  id           Int       @id @default(autoincrement()) @db.UnsignedInt
+  equip        Int?      @db.UnsignedTinyInt
+  use          Int?      @db.UnsignedTinyInt
+  setup        Int?      @db.UnsignedTinyInt
+  etc          Int?      @db.UnsignedTinyInt
+  cash         Int?      @db.UnsignedTinyInt
+  character    Character @relation(fields: [character_id], references: [id], onDelete: Cascade)
+  character_id Int       @unique @db.UnsignedInt
+}

@@ -1,10 +1,10 @@
 import moment from "moment-timezone";
 import { Socket } from "net";
 
-import PacketCrypto from "../packet/PacketCrypto";
-import PacketReader from "../packet/PacketReader";
-import PacketWriter from "../packet/PacketWriter";
-import Opcodes from "../packet/Opcodes";
+import PacketCrypto from "../packet/tools/PacketCrypto";
+import PacketReader from "../packet/tools/PacketReader";
+import PacketWriter from "../packet/tools/PacketWriter";
+import Opcodes from "../packet/tools/Opcodes";
 import { Account as PAccount } from "@prisma/client";
 import { Account } from "../database/model/Account";
 

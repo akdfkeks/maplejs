@@ -1,7 +1,7 @@
 import net from "net";
 import Client from "../client/client";
-import PacketHandler from "../packet/PacketHandler";
-import Opcodes from "../packet/Opcodes";
+import PacketHandler from "../packet/tools/PacketHandler";
+import Opcodes from "../packet/tools/Opcodes";
 
 const ServerFactory = () => {
 	const server = net.createServer();

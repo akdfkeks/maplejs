@@ -1,18 +1,18 @@
-import Client from "../client/client";
+import Client from "../../client/client";
 import PacketReader from "./PacketReader";
-import ErrorHandler from "../handler/ErrorHandler";
-import LoginHandler from "../handler/LoginHandler";
-import PongHandler from "../handler/PongHandler";
-import TempEmptyHandler from "../handler/TempEmptyHandler";
-import CharacterListRequestHandler from "../handler/CharacterListRequestHandler";
-import CharacterSelectHandler from "../handler/CharacterSelectHandler";
-import CheckCharacterNameHandler from "../handler/CheckCharacterNameHandler";
-import CreateCharacterHandler from "../handler/CreateCharacterHandler";
-import AuthSecondPasswordHandler from "../handler/AuthSecondPasswordHandler";
-import CharacterSelectWithSPWHandler from "../handler/CharacterSelectWithSPWHandler";
+import ErrorHandler from "../../handler/ErrorHandler";
+import LoginHandler from "../../handler/LoginHandler";
+import PongHandler from "../../handler/PongHandler";
+import TempEmptyHandler from "../../handler/TempEmptyHandler";
+import CharacterListRequestHandler from "../../handler/CharacterListRequestHandler";
+import CharacterSelectHandler from "../../handler/CharacterSelectHandler";
+import CheckCharacterNameHandler from "../../handler/CheckCharacterNameHandler";
+import CreateCharacterHandler from "../../handler/CreateCharacterHandler";
+import AuthSecondPasswordHandler from "../../handler/AuthSecondPasswordHandler";
+import CharacterSelectWithSPWHandler from "../../handler/CharacterSelectWithSPWHandler";
 import Opcodes from "./Opcodes";
-import DeleteCharacterHandler from "../handler/DeleteCharacterHandler";
-import LoggedInHandler from "../handler/channel/LoggedInHandler";
+import DeleteCharacterHandler from "../../handler/DeleteCharacterHandler";
+import LoggedInHandler from "../../handler/channel/LoggedInHandler";
 
 interface IOpcodesWithHandler {
 	[opcode: string]: (client: Client, reader: PacketReader) => void;

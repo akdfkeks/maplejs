@@ -1,7 +1,7 @@
 import Client from "../client/client";
-import PacketReader from "../packet/PacketReader";
-import PacketWriter from "../packet/PacketWriter";
-import Opcodes from "../packet/Opcodes";
+import PacketReader from "../packet/tools/PacketReader";
+import PacketWriter from "../packet/tools/PacketWriter";
+import Opcodes from "../packet/tools/Opcodes";
 import prisma from "../database/prisma";
 
 const CharacterListRequestHandler = async (client: Client, reader: PacketReader) => {

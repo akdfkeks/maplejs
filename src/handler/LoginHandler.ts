@@ -3,6 +3,7 @@ import PacketReader from "../packet/tools/PacketReader";
 import Opcodes from "../packet/tools/Opcodes";
 import prisma from "../database/prisma";
 import AccountPacketFactory from "../packet/factory/AccountPacket";
+import LoginPacket from "@/tools/packet/LoginPacket";
 
 const LoginHandler = async (client: MapleClient, reader: PacketReader) => {
 	const name = reader.readMapleAsciiString();

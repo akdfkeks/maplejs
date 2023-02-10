@@ -89,7 +89,7 @@ const CreateCharacterHandler = async (client: MapleClient, reader: PacketReader)
 
 	// addCharStats
 	packet.writeInt(character.id);
-	packet.writeMapleAsciiString(character.name); // ,13
+	packet.writeString(character.name, 13); // ,13
 	packet.writeByte(character.gender ? 1 : 0);
 	packet.writeByte(character.skin);
 	packet.writeInt(character.face);

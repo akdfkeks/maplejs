@@ -32,7 +32,7 @@ export default class AccountPacketFactory {
 		packet.writeByte(account.gender ? 1 : 0); // Gender 1 or 0
 		packet.writeByte(account.gm > 0 ? 1 : 0); // IsGm 1 or 0
 		packet.writeByte(0);
-		packet.writeMapleAsciiString(account.name); // Account name
+		packet.writeString(account.name); // Account name
 
 		// additional
 		packet.writeInt(0); // ?
@@ -40,15 +40,15 @@ export default class AccountPacketFactory {
 		packet.writeByte(0);
 		packet.writeByte(0); // chat block(mute) 1 or 0
 		packet.writeLong(0); // chat block time until
-		packet.writeMapleAsciiString(""); // ?
-		packet.writeMapleAsciiString(""); // ?
+		packet.writeString(""); // ?
+		packet.writeString(""); // ?
 
 		return packet;
 	}
 
 	public static getNameAvailability(name: string, flag: boolean) {
 		const packet = new PacketWriter(Opcodes.serverOpcodes.CHAR_NAME_RESPONSE);
-		packet.writeMapleAsciiString(name.toString());
+		packet.writeString(name);
 		packet.writeByte(flag ? 0 : 1);
 		return packet;
 	}
@@ -57,16 +57,16 @@ export default class AccountPacketFactory {
 		// server list
 		const packet = new PacketWriter(Opcodes.serverOpcodes.SERVERLIST);
 		packet.writeByte(1); // 0: 스카니아, 1: 베라, 2: 브로아, 3: 카이니, 4: 제니스 5: 크로아, so on...
-		packet.writeMapleAsciiString(`${config.server.name}`); // Server Name
+		packet.writeString(`${config.server.name}`); // Server Name
 		packet.writeByte(1); // world flag
-		packet.writeMapleAsciiString(`${config.server.message.event}`); // 채널 이름 옆에 띄워지는 Event Msg
+		packet.writeString(`${config.server.message.event}`); // 채널 이름 옆에 띄워지는 Event Msg
 		packet.writeShort(100);
 		packet.writeShort(100);
 		packet.writeByte(1);
 
 		// 채널 두개 이상이면 오류, 원인 모름
 		for (let i = 1; i <= 1; i++) {
-			packet.writeMapleAsciiString(`${config.server.name}-` + i); // world-channel (2챈-20세이상)
+			packet.writeString(`${config.server.name}-` + i); // world-channel (2챈-20세이상)
 			packet.writeInt(100); // serverload
 			packet.writeByte(i - 1); // world id
 			packet.writeShort(i - 1); // channel - 1
@@ -74,7 +74,7 @@ export default class AccountPacketFactory {
 		packet.writeShort(1);
 		packet.writeShort(400);
 		packet.writeShort(300);
-		packet.writeMapleAsciiString(`${config.server.message.login}`);
+		packet.writeString(`${config.server.message.login}`);
 		return packet;
 	}
 

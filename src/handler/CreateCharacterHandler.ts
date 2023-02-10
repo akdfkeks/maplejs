@@ -1,13 +1,14 @@
 import xml2js from "xml2js";
 import fs from "fs";
-import Client from "../client/client";
-import PacketReader from "../packet/PacketReader";
-import Character from "../models/Character";
-import PacketWriter from "../packet/PacketWriter";
+import MapleClient from "../client/Client";
+import PacketReader from "../packet/tools/PacketReader";
+import PacketWriter from "../packet/tools/PacketWriter";
 import Opcodes from "../packet/tools/Opcodes";
+import prisma from "../database/prisma";
+import { time } from "console";
 
-const CreateCharacterHandler = async (client: Client, reader: PacketReader) => {
-	const name = reader.readString();
+const CreateCharacterHandler = async (client: MapleClient, reader: PacketReader) => {
+	const name = reader.readMapleAsciiString();
 	const face = reader.readInt();
 	const hair = reader.readInt();
 	const hairColor = 0;
@@ -22,7 +23,7 @@ const CreateCharacterHandler = async (client: Client, reader: PacketReader) => {
 	const luk = 4;
 
 	// WZ값을 기반으로 성형/헤어 및 아이템값이 유효한지 확인합니다.
-	const makeCharInfo = await getMakeCharInfo(client.account.gender);
+	const makeCharInfo = await getMakeCharInfo(client.account.gender > 0 ? true : false);
 	if (
 		!makeCharInfo.face.includes(face) ||
 		!makeCharInfo.hair.includes(hair) ||
@@ -31,32 +32,64 @@ const CreateCharacterHandler = async (client: Client, reader: PacketReader) => {
 		!makeCharInfo.shoes.includes(shoes) ||
 		!makeCharInfo.weapon.includes(weapon)
 	) {
+		// 적절한 패킷 보내기 (wz 검증 실패상황)
 		return;
 	}
 
 	// 캐릭터 등록
-	const character = await Character.create(client, {
-		name,
-		face,
-		hair,
-		hairColor,
-		skin,
-		top,
-		bottom,
-		shoes,
-		weapon,
-		str,
-		dex,
-		int,
-		luk,
+	const skel = await prisma.character.create({
+		data: {
+			acccount: { connect: { id: client.account.id } },
+			name,
+			face,
+			hair: hair + hairColor,
+			skin,
+			str,
+			dex,
+			int,
+			luk,
+			inventory_slot: { create: {} },
+		},
 	});
+
+	// 기본 아이템 추가
+	const items = [
+		{ id: top, position: -5 },
+		{ id: bottom, position: -6 },
+		{ id: shoes, position: -7 },
+		{ id: weapon, position: -11 },
+	];
+
+	const itemCreationResult = await prisma.inventoryItem.createMany({
+		data: items.map((item) => {
+			return {
+				inventory_type: -1,
+				item_id: item.id,
+				position: item.position,
+				character_id: skel.id,
+			};
+		}),
+	});
+
+	if (itemCreationResult.count < 1) {
+		throw new Error("아이템 생성 실패");
+	}
+
+	const character = await prisma.character.findUnique({
+		where: { id: skel.id },
+		include: {
+			inventory_item: true,
+			inventory_slot: true,
+		},
+	});
+	// console.log(character);
 
 	const packet = new PacketWriter(Opcodes.serverOpcodes.ADD_NEW_CHAR_ENTRY);
 	packet.writeByte(0); // 0이면 생성완료 1이면 실패
 
 	// addCharStats
 	packet.writeInt(character.id);
-	packet.writeString(character.name, 13);
+	packet.writeMapleAsciiString(character.name); // ,13
 	packet.writeByte(character.gender ? 1 : 0);
 	packet.writeByte(character.skin);
 	packet.writeInt(character.face);
@@ -69,15 +102,15 @@ const CreateCharacterHandler = async (client: Client, reader: PacketReader) => {
 	packet.writeShort(character.int);
 	packet.writeShort(character.luk);
 	packet.writeShort(character.hp);
-	packet.writeShort(character.maxHp);
+	packet.writeShort(character.max_hp);
 	packet.writeShort(character.mp);
-	packet.writeShort(character.maxMp);
+	packet.writeShort(character.max_mp);
 	packet.writeShort(character.sp);
 	packet.writeShort(character.ap);
 	packet.writeInt(character.exp);
 	packet.writeShort(character.fame);
-	packet.writeInt(character.mapId);
-	packet.writeByte(character.spawnPoint);
+	packet.writeInt(character.map);
+	packet.writeByte(character.spawn_point);
 
 	// addCharLook
 	packet.writeByte(character.gender ? 1 : 0);
@@ -89,8 +122,8 @@ const CreateCharacterHandler = async (client: Client, reader: PacketReader) => {
 	// Calculate Equipments
 	const equipments = [];
 	const maskedEquipments = [];
-	for (const ivItem of character.inventoryItems) {
-		const itemId = ivItem.itemId;
+	for (const ivItem of character.inventory_item) {
+		const itemId = ivItem.item_id;
 		if (ivItem.position < -127) continue; // not visible
 		const position = ivItem.position * -1;
 		if (position < 100) {
@@ -136,8 +169,11 @@ async function getMakeCharInfo(gender: boolean) {
 	};
 
 	const imgFile = await fs.promises.readFile("wz/Etc.wz/MakeCharInfo.img.xml");
+
 	const parser = new xml2js.Parser();
+
 	const result = await parser.parseStringPromise(imgFile.toString());
+
 	for (const type of result.imgdir.imgdir) {
 		if (type.$.name !== (gender ? "CharFemale" : "CharMale")) continue;
 		for (const charInfo of type.imgdir) {

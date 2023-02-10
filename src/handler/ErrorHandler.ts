@@ -1,6 +1,6 @@
-import Client from "../client/client";
+import MapleClient from "../client/Client";
 import PacketReader from "../packet/tools/PacketReader";
 
-const ErrorHandler = (client: Client, reader: PacketReader) => {};
+const ErrorHandler = (client: MapleClient, reader: PacketReader) => {};
 
 export default ErrorHandler;

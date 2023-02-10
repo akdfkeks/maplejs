@@ -1,21 +1,22 @@
-import Client from "../../client/client";
+import MapleClient from "../../client/Client";
 import PacketReader from "./PacketReader";
 import ErrorHandler from "../../handler/ErrorHandler";
 import LoginHandler from "../../handler/LoginHandler";
 import PongHandler from "../../handler/PongHandler";
 import TempEmptyHandler from "../../handler/TempEmptyHandler";
 import CharacterListRequestHandler from "../../handler/CharacterListRequestHandler";
-import CharacterSelectHandler from "../../handler/CharacterSelectHandler";
+import SelectCharacterHandler from "../../handler/CharacterSelectHandler";
 import CheckCharacterNameHandler from "../../handler/CheckCharacterNameHandler";
 import CreateCharacterHandler from "../../handler/CreateCharacterHandler";
 import AuthSecondPasswordHandler from "../../handler/AuthSecondPasswordHandler";
-import CharacterSelectWithSPWHandler from "../../handler/CharacterSelectWithSPWHandler";
+import SelectCharacterWithSPWHandler from "../../handler/CharacterSelectWithSPWHandler";
 import Opcodes from "./Opcodes";
 import DeleteCharacterHandler from "../../handler/DeleteCharacterHandler";
 import LoggedInHandler from "../../handler/channel/LoggedInHandler";
+import { red, yellow } from "@/src/etc/color";
 
 interface IOpcodesWithHandler {
-	[opcode: string]: (client: Client, reader: PacketReader) => void;
+	[opcode: string]: (client: MapleClient, reader: PacketReader) => void;
 }
 
 // Packet의 OP CODE 별 실행될 메서드를 등록
@@ -28,12 +29,12 @@ class PacketHandler {
 		LOGIN_PASSWORD: LoginHandler, // 로그인
 		CHARLIST_REQUEST: CharacterListRequestHandler, // 캐릭터 선택창 진입
 
-		// CHECK_CHAR_NAME: CheckCharacterNameHandler, // 캐릭터 생성 - 닉네임 유효성 확인
-		// CREATE_CHAR: CreateCharacterHandler, // 캐릭터생성 완료
+		CHECK_CHAR_NAME: CheckCharacterNameHandler, // 캐릭터 생성 - 닉네임 유효성 확인
+		CREATE_CHAR: CreateCharacterHandler, // 캐릭터생성 완료
 		// DELETE_CHAR: DeleteCharacterHandler, // 캐릭터 삭제
-		// CHAR_SELECT: CharacterSelectHandler, // 캐릭터 선택
+		CHAR_SELECT: SelectCharacterHandler, // 캐릭터 선택
 
-		// CHAR_SELECT_WITH_SPW: CharacterSelectWithSPWHandler, // 캐릭터 선택 (2차 비밀번호와 함께)
+		CHAR_SELECT_WITH_SPW: SelectCharacterWithSPWHandler, // 캐릭터 선택 (2차 비밀번호와 함께)
 		// AUTH_SECOND_PASSWORD: AuthSecondPasswordHandler, // 2차비밀번호 생성
 
 		// RELOG_REQUEST: TempEmptyHandler, // 인게임 -> 로그인창시
@@ -41,7 +42,7 @@ class PacketHandler {
 
 		// 여기서부터 인게임
 		CHANGE_CHANNEL: () => {}, // 캐릭터 채널 변경
-		// PLAYER_LOGGEDIN: LoggedInHandler, // 로그인 이후
+		PLAYER_LOGGEDIN: LoggedInHandler, // 로그인 이후
 		ENTER_CASH_SHOP: () => {}, // 캐시샵 진입
 		MOVE_PLAYER: () => {}, // 캐릭터 이동
 		CHAR_INFO_REQUEST: () => {}, // 캐릭터 정보 보기
@@ -192,12 +193,19 @@ class PacketHandler {
 		PET_EXCEPTION_LIST: () => {},
 	};
 
-	public static getHandler(opcode: number) {
-		const opcodeTitle = Opcodes.getClientOpcodeByValue(opcode);
-		if (!opcodeTitle) return null;
-
+	public static getHandler(headerNum: number) {
+		// console.log(headerNum);
+		const opcodeTitle = Opcodes.getClientOpcodeByValue(headerNum);
+		if (!opcodeTitle) {
+			const opcodeValue = "0x" + ("00" + headerNum.toString(16).toUpperCase()).slice(-2);
+			console.log(`[Error] Code : (${headerNum}) 에 대한 Handler를 찾을 수 없습니다.`);
+			return (client: MapleClient, reader: PacketReader) => {};
+		}
+		console.log(`[LOG] ${opcodeTitle} Code : (${headerNum})`);
 		return PacketHandler.handler[opcodeTitle];
 	}
 }
 
 export default PacketHandler;
+
+const NOT_YET_IMPLEMENTED = (client: MapleClient, reader: PacketReader) => void {};

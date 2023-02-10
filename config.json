@@ -6,12 +6,25 @@
 		"password": "whitejs1234__"
 	},
 	"server": {
+		"name": "WhiteJS",
+		"message": {
+			"login": "Welcome to WhiteJS",
+			"event": "!! Test Message !!"
+		},
 		"adminIp": [],
-		"loginPort": 8484
+		"login": {
+			"port": 8484
+		},
+		"world": {
+			"host": "127.0.0.1",
+			"port": 9393,
+			"channelServers": []
+		}
 	},
-	"game": {
+	"world": {
 		"expRate": 10,
 		"dropRate": 10,
+		"bossDropRate": 10,
 		"mesoRate": 10
 	}
 }

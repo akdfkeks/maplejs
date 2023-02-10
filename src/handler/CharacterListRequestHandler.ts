@@ -1,10 +1,10 @@
-import Client from "../client/client";
+import MapleClient from "../client/Client";
 import PacketReader from "../packet/tools/PacketReader";
 import PacketWriter from "../packet/tools/PacketWriter";
 import Opcodes from "../packet/tools/Opcodes";
 import prisma from "../database/prisma";
 
-const CharacterListRequestHandler = async (client: Client, reader: PacketReader) => {
+const CharacterListRequestHandler = async (client: MapleClient, reader: PacketReader) => {
 	reader.skip(1);
 	const worldId = reader.readByte();
 	const channelId = reader.readByte() + 1;
@@ -33,7 +33,7 @@ const CharacterListRequestHandler = async (client: Client, reader: PacketReader)
 	for (const character of characters) {
 		// addCharStats
 		packet.writeInt(character.id);
-		packet.writeString(character.name, 13);
+		packet.writeMapleAsciiString(character.name); // , 13);
 		packet.writeByte(character.gender ? 1 : 0);
 		packet.writeByte(character.skin);
 		packet.writeInt(character.face);

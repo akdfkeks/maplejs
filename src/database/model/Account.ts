@@ -1,5 +1,5 @@
 import { Account as PAccount } from "@prisma/client";
-import Client from "../../client/client";
+import MapleClient from "../../client/Client";
 
 export class Account implements PAccount {
 	gm: number;

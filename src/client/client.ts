@@ -7,20 +7,62 @@ import PacketWriter from "../packet/tools/PacketWriter";
 import Opcodes from "../packet/tools/Opcodes";
 import { Account as PAccount } from "@prisma/client";
 import { Account } from "../database/model/Account";
+import { MapleCharacter } from "./MapleCharacter";
+import Queue from "queue";
 
 // 초기 iv(Initialization vector)값. 랜덤이어도 상관없을듯?
 const initialIvReceive = new Uint8Array([0x65, 0x56, 0x12, 0xfd]);
 const initialIvSend = new Uint8Array([0x2f, 0xa3, 0x65, 0x43]);
 
-class Client {
+class MapleClient {
+	public static LOGIN_NOTLOGGEDIN = 0;
+	public static LOGIN_SERVER_TRANSITION = 1;
+	public static LOGIN_LOGGEDIN = 2;
+	public static CHANGE_CHANNEL = 3;
+
+	public static DEFAULT_CHARSLOT = 3;
+	public static CLIENT_KEY = "CLIENT";
+
+	private player: MapleCharacter; // 임시
+
+	private channel: number = 1;
+	private accId: number = -1;
+	private world: number;
+	private birthday: number;
+
+	private charslots = MapleClient.DEFAULT_CHARSLOT;
+
+	private loggedIn: boolean = false;
+	private serverTransition: boolean = false;
+
+	// private tempban : Calendar = null;
+	private accountName: string;
+
+	private lastDLLWatch: number = 0;
+	private lastHashWatch: number = 0;
+
+	private monitored: boolean = false;
+	private receiving: boolean = true;
+
+	private gm: boolean = false;
+
+	private greason: number = 1;
+	private gender: number = -1;
+
+	private loginAttempt: number = 0;
+
+	public myCodeHash = "";
+
+	private packetQueue = new Queue();
+
 	private socket: Socket;
 
 	// DB Account 객체
 	public account: Account;
 
 	// 패킷암호화
-	private receiveCrypto: PacketCrypto;
-	private sendCrypto: PacketCrypto;
+	private inputStream: PacketCrypto;
+	private outputStream: PacketCrypto;
 
 	// 핑퐁
 	private pingpongTask: NodeJS.Timeout;
@@ -31,13 +73,13 @@ class Client {
 	public worldId: number | undefined;
 	public channelId: number;
 
-	// 생성자
-	constructor(socket: Socket, channelId = -1) {
+	// MapleClient Constructor
+	constructor(socket: Socket, channelId = 1) {
 		this.socket = socket;
-		this.channelId = channelId;
-		this.receiveCrypto = new PacketCrypto(initialIvReceive, 65);
-		this.sendCrypto = new PacketCrypto(initialIvSend, 0xffff - 65);
-		console.log(`Connection from (${socket.remoteAddress}:${socket.remotePort})`);
+		// this.channelId = channelId; // 우선 기본 1채널만 개발
+
+		this.inputStream = new PacketCrypto(initialIvReceive, 65);
+		this.outputStream = new PacketCrypto(initialIvSend, 0xffff - 65);
 		this.sendHandshake();
 
 		// 핑퐁 타이머
@@ -48,34 +90,32 @@ class Client {
 		}, 10000);
 	}
 
+	public getPacketReader(packet: Buffer) {
+		return this.readPacket(packet);
+	}
 	// 패킷 수신후 복호화하여 Reader 객체로 리턴
-	public readPacket(packet: Buffer): PacketReader | null {
+	private readPacket(packet: Buffer) {
 		if (packet.length === 0) return null;
 
-		const headerLength = 4;
-		const packetLength = packet.length - headerLength;
+		const headerLength = 4; // 4 bytes
+		const payloadLength = packet.length - headerLength;
 
-		if (packetLength === 0) return null;
+		if (payloadLength < 1) return null;
 
-		const block = packet.slice(headerLength); // 헤더를 제외한 나머지 패킷
-
-		const payload = this.receiveCrypto.decrypt(block);
-
-		console.log(`[RECV] ${payload.toString("hex")}\n${payload.toString()}`);
+		const block = packet.slice(headerLength); // 헤더를 제외한 나머지
+		const payload = this.inputStream.decrypt(block);
 
 		return new PacketReader(payload);
 	}
 
 	// Writer 객체로 된 패킷을 정렬해서 전송
 	public sendPacket(packet: PacketWriter): void {
-		const header = this.sendCrypto.getPacketHeader(packet.getBuffer().length);
+		const header = this.outputStream.getPacketHeader(packet.getBuffer().length);
 		this.socket.write(header);
 
 		const data = packet.getBuffer();
-		console.log(`[SEND] ${data.toString("hex")}\n${data.toString()}`);
-		// console.log(`[SEND] ${data.toString("utf8")}\n${data.toString()}`);
 
-		const encryptedData = this.sendCrypto.encrypt(data);
+		const encryptedData = this.outputStream.encrypt(data);
 		this.socket.write(encryptedData);
 	}
 
@@ -90,6 +130,10 @@ class Client {
 		packet.writeByte(1);
 		this.socket.write(packet.getBuffer());
 	}
+
+	public getSession() {
+		return this.socket;
+	}
 }
 
-export default Client;
+export default MapleClient;

@@ -1,8 +1,8 @@
 import moment from "moment";
-import Client from "../client/client";
+import MapleClient from "../client/Client";
 import PacketReader from "../packet/tools/PacketReader";
 
-const PongHandler = async (client: Client, reader: PacketReader) => {
+const PongHandler = async (client: MapleClient, reader: PacketReader) => {
 	client.lastPong = moment();
 };
 

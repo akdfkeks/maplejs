@@ -1,12 +1,12 @@
 import { read } from "fs";
 import { getManager } from "typeorm";
-import Client from "../client/client";
+import MapleClient from "../client/Client";
 import Character from "../models/Character";
 import Opcodes from "../packet/tools/Opcodes";
-import PacketReader from "../packet/PacketReader";
-import PacketWriter from "../packet/PacketWriter";
+import PacketReader from "../packet/tools/PacketReader";
+import PacketWriter from "../packet/tools/PacketWriter";
 
-const DeleteCharacterHandler = async (client: Client, reader: PacketReader) => {
+const DeleteCharacterHandler = async (client: MapleClient, reader: PacketReader) => {
 	const worldId = reader.readUByte(); // 아직모르겠는데 worldId 값으로 추정**
 	const password = reader.readUInt(); // 2차비밀번호 일단 무시
 	const characterId = reader.readUInt();

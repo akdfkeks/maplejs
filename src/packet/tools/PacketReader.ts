@@ -1,89 +1,86 @@
-import iconv from 'iconv-lite';
+import { Point } from "@/src/lib/Point";
+import iconv from "iconv-lite";
 
 class PacketReader {
-  private buffer: Buffer;
-  private offset: number;
+	private buffer: Buffer;
+	private offset: number = 0;
 
-  constructor(data: Buffer) {
-    this.buffer = Buffer.from(data);
-    this.offset = 0;
-  }
+	constructor(data: Buffer) {
+		this.buffer = Buffer.from(data);
+		this.offset = 0;
+	}
 
-  public readByte(): number {
-    const res = this.buffer.readInt8(this.offset);
-    this.offset += 1;
+	public readByte() {
+		const r = this.buffer.readInt8(this.offset);
+		this.offset += 1;
+		return r & 0xff;
+	}
 
-    return res;
-  }
+	public readInt() {
+		const r = this.buffer.readInt32LE(this.offset);
+		this.offset += 4;
+		return r;
+	}
+	public readShort() {
+		const byte1 = this.readByte();
+		const byte2 = this.readByte();
 
-  public readShort(): number {
-    const res = this.buffer.readInt16LE(this.offset);
-    this.offset += 2;
+		return (byte2 << 8) + byte1;
+	}
 
-    return res;
-  }
+	public readUShort() {
+		let r = this.readShort();
+		if (r < 0) r += 65536;
+		return r;
+	}
 
-  public readInt(): number {
-    const res = this.buffer.readInt32LE(this.offset);
-    this.offset += 4;
+	public readLong() {
+		const byte1 = this.readByte();
+		const byte2 = this.readByte();
+		const byte3 = this.readByte();
+		const byte4 = this.readByte();
+		const byte5 = this.readByte();
+		const byte6 = this.readByte();
+		const byte7 = this.readByte();
+		const byte8 = this.readByte();
 
-    return res;
-  }
+		return (
+			(byte8 << 56) +
+			(byte7 << 48) +
+			(byte6 << 40) +
+			(byte5 << 32) +
+			(byte4 << 24) +
+			(byte3 << 16) +
+			(byte2 << 8) +
+			byte1
+		);
+	}
 
-  public readLong(): bigint {
-    const res = this.buffer.readBigInt64LE(this.offset);
-    this.offset += 8;
+	public readAsciiString(n: number) {
+		const r = Buffer.alloc(n);
+		for (let i = 0; i < n; i++) {
+			r[i] = this.readByte();
+		}
 
-    return res;
-  }
+		return iconv.decode(r, "cp949");
+	}
+	public readMapleAsciiString() {
+		return this.readAsciiString(this.readShort()); // 아마 String 의 Length 를 읽는듯 싶음
+	}
 
-  public readUByte(): number {
-    const res = this.buffer.readUInt8(this.offset);
-    this.offset += 1;
+	public readPos(): Point {
+		const x = this.readShort();
+		const y = this.readShort();
+		return new Point({ x, y });
+	}
 
-    return res;
-  }
+	public skip(length: number): void {
+		this.offset += length;
+	}
 
-  public readUShort(): number {
-    const res = this.buffer.readUInt16LE(this.offset);
-    this.offset += 2;
-
-    return res;
-  }
-
-  public readUInt(): number {
-    const res = this.buffer.readUInt32LE(this.offset);
-    this.offset += 4;
-
-    return res;
-  }
-
-  public readULong(): bigint {
-    const res = this.buffer.readBigUInt64LE(this.offset);
-    this.offset += 8;
-
-    return res;
-  }
-
-  public readString(length?: number): string {
-    let strLength = length || this.readUShort();
-
-    const stringBuffer = this.buffer.slice(
-      this.offset,
-      this.offset + strLength
-    );
-    this.offset += strLength;
-
-    return iconv.decode(stringBuffer, 'euc-kr');
-  }
-
-  public skip(length: number): void {
-    this.offset += length;
-  }
-
-  public getBuffer(): Buffer {
-    return this.buffer;
-  }
+	public getBuffer(): Buffer {
+		return this.buffer;
+	}
 }
 
 export default PacketReader;

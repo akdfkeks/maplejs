@@ -1,23 +1,20 @@
-import { getManager } from "typeorm";
-import Client from "../client/client";
-import Character from "../models/Character";
-import PacketReader from "../packet/PacketReader";
-import PacketWriter from "../packet/PacketWriter";
+import MapleClient from "../client/Client";
+import PacketReader from "../packet/tools/PacketReader";
+import PacketWriter from "../packet/tools/PacketWriter";
 import Opcodes from "../packet/tools/Opcodes";
-import StringFactory from "../packet/StringFactory";
+import StringFactory from "../packet/tools/StringFactory";
+import prisma from "../database/prisma";
+import AccountPacketFactory from "packet/factory/AccountPacket";
 
-const CheckCharacterNameHandler = async (client: Client, reader: PacketReader) => {
-	const nickname = reader.readString();
-	const availability = await checkNicknameAvailability(nickname);
+const CheckCharacterNameHandler = async (client: MapleClient, reader: PacketReader) => {
+	const nickname = reader.readMapleAsciiString();
+	const isAvailable = await checkNickAvailable(nickname);
 
-	const packet = new PacketWriter(Opcodes.serverOpcodes.CHAR_NAME_RESPONSE);
-	packet.writeString(nickname.toString());
-	packet.writeByte(availability ? 0 : 1);
-	client.sendPacket(packet);
+	client.sendPacket(AccountPacketFactory.getNameAvailability(nickname, isAvailable));
 };
 
 // 캐릭터 이름 검사
-async function checkNicknameAvailability(nickname: string): Promise<boolean> {
+async function checkNickAvailable(nickname: string): Promise<boolean> {
 	const stringFactory = new StringFactory(nickname);
 
 	// 닉네임 예약어
@@ -38,17 +35,16 @@ async function checkNicknameAvailability(nickname: string): Promise<boolean> {
 	}
 
 	// 중복닉네임 검사
-	if (await checkNicknameExists(nickname)) {
+	if (await checkNickExists(nickname)) {
 		return false;
 	}
 
 	return true;
 }
 
-// 캐릭터 중복닉네임 여부 확인
-async function checkNicknameExists(nickname: string): Promise<boolean> {
-	const entityManager = getManager();
-	const count = await entityManager.count(Character, { name: nickname });
+// 닉네임 중복 여부 확인
+async function checkNickExists(name: string): Promise<boolean> {
+	const count = await prisma.character.count({ where: { name } });
 	return count > 0 ? true : false;
 }
 

@@ -1,33 +1,27 @@
 import net from "net";
-import Client from "../client/client";
+import MapleClient from "../client/Client";
 import PacketHandler from "../packet/tools/PacketHandler";
 import Opcodes from "../packet/tools/Opcodes";
+import { read } from "fs";
 
 const ServerFactory = () => {
 	const server = net.createServer();
 
 	server.on("connection", async (socket) => {
-		const client = new Client(socket);
+		const client = new MapleClient(socket);
 
 		socket.on("data", async (data) => {
-			const reader = client.readPacket(data);
+			const reader = client.getPacketReader(data); //reader : 복호화된 Buffer 가 담긴 객체
 
 			if (reader) {
 				try {
-					const opcode = reader.readUShort();
-					const handler = PacketHandler.getHandler(opcode);
+					const header_num = reader.readShort();
+					const handler = PacketHandler.getHandler(header_num);
 
-					if (!handler) {
-						const opcodeTitle = Opcodes.getClientOpcodeByValue(opcode);
-						const opcodeValue =
-							"0x" + ("00" + opcode.toString(16).toUpperCase()).slice(-2);
-						throw new Error(
-							`${opcodeTitle} (${opcodeValue}) 에 대한 핸들러를 찾을 수 없습니다`
-						);
-					}
-
-					// else
-					return handler(client, reader);
+					handler(client, reader);
+					// Buffer 출력용
+					console.log(reader.getBuffer());
+					return;
 				} catch (err) {
 					console.log(err);
 				}
@@ -37,7 +31,7 @@ const ServerFactory = () => {
 
 	server.on("error", (error) => {
 		console.log(error);
-		process.exit(1);
+		// process.exit(1);
 	});
 
 	return server;

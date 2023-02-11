@@ -1,5 +1,4 @@
 import { Account } from "@prisma/client";
-import MapleClient from "../../client/Client";
 import Opcodes from "../tools/Opcodes";
 import PacketWriter from "../tools/PacketWriter";
 import config from "@/config.json";
@@ -29,7 +28,7 @@ export default class AccountPacketFactory {
 		// Basic info
 		packet.writeByte(0);
 		packet.writeInt(account.id); // Account Id
-		packet.writeByte(account.gender ? 1 : 0); // Gender 1 or 0
+		packet.writeByte(account.gender > 0 ? 1 : 0); // Male: 0, Female: 1
 		packet.writeByte(account.gm > 0 ? 1 : 0); // IsGm 1 or 0
 		packet.writeByte(0);
 		packet.writeString(account.name); // Account name
@@ -56,7 +55,7 @@ export default class AccountPacketFactory {
 	public static getServerList() {
 		// server list
 		const packet = new PacketWriter(Opcodes.serverOpcodes.SERVERLIST);
-		packet.writeByte(1); // 0: 스카니아, 1: 베라, 2: 브로아, 3: 카이니, 4: 제니스 5: 크로아, so on...
+		packet.writeByte(1); // 0: 스카니아, 1: 베라, 2: 브로아, 3: 카이니, 4: 제니스 5: 크로아 ...
 		packet.writeString(`${config.server.name}`); // Server Name
 		packet.writeByte(1); // world flag
 		packet.writeString(`${config.server.message.event}`); // 채널 이름 옆에 띄워지는 Event Msg

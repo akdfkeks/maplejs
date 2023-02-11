@@ -9,12 +9,17 @@ import { Account as PAccount } from "@prisma/client";
 import { Account } from "../database/model/Account";
 import { MapleCharacter } from "./MapleCharacter";
 import Queue from "queue";
+import { buffer } from "stream/consumers";
+import prisma from "../database/prisma";
 
 // 초기 iv(Initialization vector)값. 랜덤이어도 상관없을듯?
 const initialIvReceive = new Uint8Array([0x65, 0x56, 0x12, 0xfd]);
 const initialIvSend = new Uint8Array([0x2f, 0xa3, 0x65, 0x43]);
 
 class MapleClient {
+	createdChar(charId: number) {
+		// allowedChar.add(id) // 접속 허용 목록 같은건가?
+	}
 	public static LOGIN_NOTLOGGEDIN = 0;
 	public static LOGIN_SERVER_TRANSITION = 1;
 	public static LOGIN_LOGGEDIN = 2;
@@ -26,17 +31,18 @@ class MapleClient {
 	private player: MapleCharacter; // 임시
 
 	private channel: number = 1;
-	private accId: number = -1;
+
 	private world: number;
 	private birthday: number;
 
-	private charslots = MapleClient.DEFAULT_CHARSLOT;
+	public charslots = MapleClient.DEFAULT_CHARSLOT;
 
 	private loggedIn: boolean = false;
 	private serverTransition: boolean = false;
 
 	// private tempban : Calendar = null;
-	private accountName: string;
+	public accId: number = -1;
+	public accName: string;
 
 	private lastDLLWatch: number = 0;
 	private lastHashWatch: number = 0;
@@ -44,10 +50,10 @@ class MapleClient {
 	private monitored: boolean = false;
 	private receiving: boolean = true;
 
-	private gm: boolean = false;
+	public gm: number = 0;
 
 	private greason: number = 1;
-	private gender: number = -1;
+	public gender: number = -1;
 
 	private loginAttempt: number = 0;
 
@@ -58,7 +64,7 @@ class MapleClient {
 	private socket: Socket;
 
 	// DB Account 객체
-	public account: Account;
+	// public account: Account;
 
 	// 패킷암호화
 	private inputStream: PacketCrypto;
@@ -72,10 +78,12 @@ class MapleClient {
 	// 접속중인 월드/채널 정보
 	public worldId: number | undefined;
 	public channelId: number;
+	public ipv4: string;
 
 	// MapleClient Constructor
 	constructor(socket: Socket, channelId = 1) {
 		this.socket = socket;
+		this.ipv4 = this.socket.remoteAddress;
 		// this.channelId = channelId; // 우선 기본 1채널만 개발
 
 		this.inputStream = new PacketCrypto(initialIvReceive, 65);
@@ -85,9 +93,38 @@ class MapleClient {
 		// 핑퐁 타이머
 		this.pingpongTask = setInterval(() => {
 			const pingPacket = new PacketWriter(Opcodes.serverOpcodes.PING);
-			this.sendPacket(pingPacket);
+			this.sendPacket(pingPacket.getBuffer());
 			this.lastPing = moment();
 		}, 10000);
+	}
+
+	public async login(name: string, pw: string) {
+		let loginOk = 5;
+
+		// 벤, 채금, 비번 등등 체크
+		if (true) {
+		}
+
+		try {
+			const account = await prisma.account.findUnique({
+				where: {
+					name,
+				},
+			});
+			if (!account) loginOk = 5;
+
+			this.accName = account.name;
+			this.accId = account.id;
+			this.gm = account.gm;
+			this.gender = account.gender;
+			this.loggedIn = true;
+			loginOk = this.loggedIn ? 0 : 4;
+		} catch (err) {
+			console.log(err);
+			loginOk = 6;
+		} finally {
+		}
+		return loginOk;
 	}
 
 	public getPacketReader(packet: Buffer) {
@@ -109,13 +146,11 @@ class MapleClient {
 	}
 
 	// Writer 객체로 된 패킷을 정렬해서 전송
-	public sendPacket(packet: PacketWriter): void {
-		const header = this.outputStream.getPacketHeader(packet.getBuffer().length);
+	public sendPacket(packet: Buffer): void {
+		const header = this.outputStream.getPacketHeader(packet.length);
 		this.socket.write(header);
 
-		const data = packet.getBuffer();
-
-		const encryptedData = this.outputStream.encrypt(data);
+		const encryptedData = this.outputStream.encrypt(packet);
 		this.socket.write(encryptedData);
 	}
 
@@ -129,6 +164,42 @@ class MapleClient {
 		packet.writeBytes(initialIvSend);
 		packet.writeByte(1);
 		this.socket.write(packet.getBuffer());
+	}
+
+	/**
+	 * 캐릭터를 조회하여 Array[MapleCharacter] 를 반환합니다
+	 * 반환된 목록은 어디선가 쓰입니다
+	 */
+	public async loadCharacters(serverId: number) {
+		let charSlot: Array<MapleCharacter> = [];
+
+		// 캐릭터의 기본 정보를 조회합니다. 굳이 두번으로 나눌 필요가 있을까?
+		const rowChars = await this.loadCharactersInternal(serverId);
+		/**
+		 * 기본 정보를 통해 게임에 필요한 모든 정보를 로딩합니다.
+		 * 조회한 데이터를 통해 인게임에 필요한 모든 정보를 담은 MapleCharacter 객체를 생성합니다.
+		 * 매우매우매우 중요한 부분입니다.
+		 */
+		for (const cni of rowChars) {
+			const c = await MapleCharacter.loadCharFromDB(this, cni.id, false);
+			charSlot.push(c);
+		}
+		return charSlot;
+	}
+
+	private async loadCharactersInternal(serverId: number) {
+		const chars = await prisma.character.findMany({
+			where: {
+				world: serverId,
+				account_id: this.accId,
+			},
+			select: {
+				id: true,
+				name: true,
+				gm: true,
+			},
+		});
+		return chars;
 	}
 
 	public getSession() {

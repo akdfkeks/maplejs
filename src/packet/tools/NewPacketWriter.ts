@@ -1,12 +1,11 @@
 import { Point } from "@/src/lib/Point";
-import StringFactory from "./StringFactory";
-
 class LittleEndianPacketWriter {
 	private buffer: Buffer;
 	private offset: number;
 
 	constructor(size: number = 32) {
 		this.buffer = Buffer.alloc(size);
+		this.offset = 0;
 	}
 
 	public getPacket() {
@@ -24,8 +23,10 @@ class LittleEndianPacketWriter {
 	}
 
 	public writeByte(n: number) {
-		this.buffer.writeInt8(n, this.offset);
-		this.offset += 1;
+		this.ensureCapacity(1);
+		const used = this.buffer.writeInt8(n, this.offset);
+
+		this.offset = used;
 	}
 
 	public writeBytes(n: Uint8Array) {
@@ -35,18 +36,24 @@ class LittleEndianPacketWriter {
 	}
 
 	public writeShort(n: number) {
-		this.buffer.writeInt16LE(n, this.offset);
-		this.offset += 2;
+		this.ensureCapacity(2);
+		const used = this.buffer.writeInt16LE(n, this.offset);
+		this.offset = used;
 	}
 
 	public writeInt(n: number) {
-		this.buffer.writeInt32LE(n, this.offset);
-		this.offset += 4;
+		this.ensureCapacity(4);
+		const used = this.buffer.writeInt32LE(n, this.offset);
+		this.offset = used;
 	}
 
 	public writeLong(n: number | bigint) {
-		this.buffer.writeBigInt64LE(typeof n === "bigint" ? n : BigInt(n), this.offset);
-		this.offset += 8;
+		this.ensureCapacity(8);
+		const used = this.buffer.writeBigInt64LE(
+			typeof n === "bigint" ? n : BigInt(n),
+			this.offset
+		);
+		this.offset = used;
 	}
 
 	public writeAsciiString(s: string, max?: number) {
@@ -74,10 +81,18 @@ class LittleEndianPacketWriter {
 		this.writeShort(code);
 	}
 
-	public writePos(p: Point) {
-		this.writeShort(p.x);
-		this.writeShort(p.y);
+	private ensureCapacity(byte: number) {
+		const g = this.buffer.byteLength - this.offset;
+		if (g < byte) {
+			this.extend(byte - g);
+		}
+	}
+
+	private extend(size: number) {
+		const oldBuf = this.buffer;
+		const oldSize = this.buffer.byteLength;
+		this.buffer = Buffer.alloc(oldSize + size);
+		oldBuf.copy(this.buffer);
 	}
 }
-
 export default LittleEndianPacketWriter;

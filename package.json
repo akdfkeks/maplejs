@@ -13,6 +13,7 @@
 		"@prisma/client": "^4.10.0",
 		"dotenv": "^16.0.3",
 		"iconv-lite": "^0.6.3",
+		"lodash": "^4.17.21",
 		"moment-timezone": "^0.5.40",
 		"prisma": "^4.10.0",
 		"queue": "^6.0.2",
@@ -23,6 +24,7 @@
 		"xml2js": "^0.4.23"
 	},
 	"devDependencies": {
+		"@types/lodash": "^4.14.191",
 		"@types/node": "^18.13.0",
 		"@types/xml2js": "^0.4.11",
 		"chalk": "^5.2.0",

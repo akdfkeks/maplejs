@@ -1,7 +1,7 @@
-import MapleClient from "../client/Client";
-import Opcodes from "../packet/tools/Opcodes";
-import PacketReader from "../packet/tools/PacketReader";
-import PacketWriter from "../packet/tools/PacketWriter";
+import MapleClient from "../../../client/Client";
+import Opcodes from "../../../packet/tools/Opcodes";
+import PacketReader from "../../../packet/tools/PacketReader";
+import PacketWriter from "../../../packet/tools/PacketWriter";
 
 const AuthSecondPasswordHandler = async (client: MapleClient, reader: PacketReader) => {
 	const mode = reader.readUByte(); // 0: 2차비번삭제, 1: 2차비번설정

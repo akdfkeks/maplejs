@@ -1,11 +1,11 @@
 import xml2js from "xml2js";
 import fs from "fs";
-import MapleClient from "../client/Client";
-import PacketReader from "../packet/tools/PacketReader";
-import PacketWriter from "../packet/tools/PacketWriter";
-import Opcodes from "../packet/tools/Opcodes";
-import prisma from "../database/prisma";
-import { time } from "console";
+import MapleClient from "@/src/client/Client";
+import PacketReader from "@/src/packet/tools/PacketReader";
+import prisma from "@/src/database/prisma";
+import Opcodes from "@/src/packet/tools/Opcodes";
+import PacketWriter from "@/src/packet/tools/PacketWriter";
+import LittleEndianPacketWriter from "@/src/packet/tools/NewPacketWriter";
 
 const CreateCharacterHandler = async (client: MapleClient, reader: PacketReader) => {
 	const name = reader.readMapleAsciiString();
@@ -23,7 +23,7 @@ const CreateCharacterHandler = async (client: MapleClient, reader: PacketReader)
 	const luk = 4;
 
 	// WZ값을 기반으로 성형/헤어 및 아이템값이 유효한지 확인합니다.
-	const makeCharInfo = await getMakeCharInfo(client.account.gender > 0 ? true : false);
+	const makeCharInfo = await getMakeCharInfo(client.gender > 0 ? true : false);
 	if (
 		!makeCharInfo.face.includes(face) ||
 		!makeCharInfo.hair.includes(hair) ||
@@ -39,7 +39,7 @@ const CreateCharacterHandler = async (client: MapleClient, reader: PacketReader)
 	// 캐릭터 등록
 	const skel = await prisma.character.create({
 		data: {
-			acccount: { connect: { id: client.account.id } },
+			acccount: { connect: { id: client.accId } },
 			name,
 			face,
 			hair: hair + hairColor,
@@ -67,6 +67,8 @@ const CreateCharacterHandler = async (client: MapleClient, reader: PacketReader)
 				item_id: item.id,
 				position: item.position,
 				character_id: skel.id,
+				account_id: skel.account_id,
+				type: 0,
 			};
 		}),
 	});
@@ -84,12 +86,12 @@ const CreateCharacterHandler = async (client: MapleClient, reader: PacketReader)
 	});
 	// console.log(character);
 
-	const packet = new PacketWriter(Opcodes.serverOpcodes.ADD_NEW_CHAR_ENTRY);
+	const packet = new LittleEndianPacketWriter(Opcodes.serverOpcodes.ADD_NEW_CHAR_ENTRY);
 	packet.writeByte(0); // 0이면 생성완료 1이면 실패
 
 	// addCharStats
 	packet.writeInt(character.id);
-	packet.writeString(character.name, 13); // ,13
+	packet.writeAsciiString(character.name, 13); // ,13
 	packet.writeByte(character.gender ? 1 : 0);
 	packet.writeByte(character.skin);
 	packet.writeInt(character.face);
@@ -105,7 +107,7 @@ const CreateCharacterHandler = async (client: MapleClient, reader: PacketReader)
 	packet.writeShort(character.max_hp);
 	packet.writeShort(character.mp);
 	packet.writeShort(character.max_mp);
-	packet.writeShort(character.sp);
+	// packet.writeShort(character.sp);
 	packet.writeShort(character.ap);
 	packet.writeInt(character.exp);
 	packet.writeShort(character.fame);
@@ -155,7 +157,7 @@ const CreateCharacterHandler = async (client: MapleClient, reader: PacketReader)
 	// ranking
 	packet.writeByte(0); // 랭킹표시 1 미표시 0 (1일시 추가패킷 write)
 
-	client.sendPacket(packet);
+	client.sendPacket(packet.getPacket());
 };
 
 async function getMakeCharInfo(gender: boolean) {

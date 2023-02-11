@@ -1,9 +1,17 @@
-import MapleClient from "../client/Client";
-import PacketReader from "../packet/tools/PacketReader";
-import PacketWriter from "../packet/tools/PacketWriter";
-import Opcodes from "../packet/tools/Opcodes";
-import prisma from "../database/prisma";
+import MapleClient from "../../client/Client";
+import PacketReader from "../../packet/tools/PacketReader";
+import PacketWriter from "../../packet/tools/PacketWriter";
+import Opcodes from "../../packet/tools/Opcodes";
+import prisma from "../../database/prisma";
 
+// 사용불가
+// 사용불가
+// 사용불가
+// 사용불가
+// 사용불가
+// 사용불가
+// 사용불가
+// 사용불가
 const CharacterListRequestHandler = async (client: MapleClient, reader: PacketReader) => {
 	reader.skip(1);
 	const worldId = reader.readByte();
@@ -15,7 +23,7 @@ const CharacterListRequestHandler = async (client: MapleClient, reader: PacketRe
 	// 캐릭터 로딩
 	// await client.account.loadCharacters(worldId);
 	const characters = await prisma.character.findMany({
-		where: { account_id: client.account.id },
+		where: { account_id: client.accId },
 		include: {
 			inventory_item: true,
 			inventory_slot: true,
@@ -39,7 +47,7 @@ const CharacterListRequestHandler = async (client: MapleClient, reader: PacketRe
 		packet.writeInt(character.face);
 		packet.writeInt(character.hair);
 
-		for (let i = 0; i < 8; i++) packet.writeByte(0); // 제로바이트 8개
+		packet.writeByte(0); // 제로바이트 8개
 
 		packet.writeByte(character.level);
 		packet.writeShort(character.job);
@@ -103,13 +111,13 @@ const CharacterListRequestHandler = async (client: MapleClient, reader: PacketRe
 	}
 
 	// 2nd password
-	packet.writeByte(client.account.second_password ? 1 : 2); // 1: 2차비번있음 2: 없음
+	packet.writeByte(2); // 1: 2차비번있음 2: 없음
 	packet.writeByte(0);
 
 	// etc
 	packet.writeInt(6); // 캐릭터 슬롯수
 
-	client.sendPacket(packet);
+	// client.sendPacket(packet.);
 };
 
 export default CharacterListRequestHandler;

@@ -21,6 +21,13 @@ class PacketWriter {
 
 		return this;
 	}
+	public writeUByte(value: number): PacketWriter {
+		this.realloc(1);
+		this.buffer.writeUInt8(value, this.offset);
+		this.offset += 1;
+
+		return this;
+	}
 
 	public writeShort(value: number): PacketWriter {
 		this.realloc(2);
@@ -42,14 +49,6 @@ class PacketWriter {
 		this.realloc(8);
 		this.buffer.writeBigInt64LE(typeof value === "bigint" ? value : BigInt(value), this.offset);
 		this.offset += 8;
-
-		return this;
-	}
-
-	public writeUByte(value: number): PacketWriter {
-		this.realloc(1);
-		this.buffer.writeUInt8(value, this.offset);
-		this.offset += 1;
 
 		return this;
 	}

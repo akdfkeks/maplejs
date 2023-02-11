@@ -16,11 +16,24 @@ class PacketReader {
 		return r & 0xff;
 	}
 
+	public readUByte() {
+		const r = this.buffer.readUInt8(this.offset);
+		this.offset += 1;
+		return r & 0xff;
+	}
+
+	// public readOpcode() {
+	// 	const byte1 = this.readUByte();
+	// 	const byte2 = this.readUByte();
+	// 	return (byte2 << 8) + byte1;
+	// }
+
 	public readInt() {
 		const r = this.buffer.readInt32LE(this.offset);
 		this.offset += 4;
 		return r;
 	}
+
 	public readShort() {
 		const byte1 = this.readByte();
 		const byte2 = this.readByte();

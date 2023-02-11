@@ -26,16 +26,17 @@ class LoginPacket {
 		this.version = ret.toString();
 	}
 
-	public static getHello(sendIv: Uint8Array, recvIv: Uint8Array) {
-		const packetSize = 13 + this.version.length;
-		const packetMaker = new LittleEndianPacketWriter(packetSize);
-		packetMaker.writeShort(packetSize);
-		packetMaker.writeShort(291); // KMS Static
-		packetMaker.writeMapleAsciiString(this.version);
-		packetMaker.writeBytes(recvIv);
-		packetMaker.writeBytes(sendIv);
-		packetMaker.writeByte(1); // 1 = KMS, 2 = KMST, 7 = MSEA, 8 = GlobalMS, 5 = Test Server
-		return packetMaker.getPacket();
+	public static getHello(recvIv: Uint8Array, sendIv: Uint8Array) {
+		const ps = 13 + "98369".length; // packect size
+		const pm = new LittleEndianPacketWriter(1);
+		pm.writeShort(ps);
+		pm.writeShort(291); // KMS Static
+		// pm.writeMapleAsciiString(this.version);
+		pm.writeEuckrString("98369");
+		pm.writeBytes(recvIv);
+		pm.writeBytes(sendIv);
+		pm.writeByte(1); // 1 = KMS, 2 = KMST, 7 = MSEA, 8 = GlobalMS, 5 = Test Server
+		return pm.getPacket();
 	}
 
 	public static getPing() {

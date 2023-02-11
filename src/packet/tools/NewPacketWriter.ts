@@ -1,4 +1,5 @@
 import { Point } from "@/src/lib/Point";
+import StringFactory from "./StringFactory";
 class LittleEndianPacketWriter {
 	private buffer: Buffer;
 	private offset: number;
@@ -29,9 +30,16 @@ class LittleEndianPacketWriter {
 		this.offset = used;
 	}
 
+	public writeUByte(n: number) {
+		this.ensureCapacity(1);
+		const used = this.buffer.writeUInt8(n, this.offset);
+
+		this.offset = used;
+	}
+
 	public writeBytes(n: Uint8Array) {
 		for (let i = 0; i < n.length; i++) {
-			this.writeByte(n[i]);
+			this.writeUByte(n[i]);
 		}
 	}
 
@@ -49,10 +57,7 @@ class LittleEndianPacketWriter {
 
 	public writeLong(n: number | bigint) {
 		this.ensureCapacity(8);
-		const used = this.buffer.writeBigInt64LE(
-			typeof n === "bigint" ? n : BigInt(n),
-			this.offset
-		);
+		const used = this.buffer.writeBigInt64LE(typeof n === "bigint" ? n : BigInt(n), this.offset);
 		this.offset = used;
 	}
 
@@ -75,6 +80,12 @@ class LittleEndianPacketWriter {
 		this.writeShort(ascii.length);
 		// 2. 문자열을 작성합니다
 		this.writeAsciiString(s);
+	}
+
+	public writeEuckrString(s: string) {
+		const euckr = new StringFactory(s);
+		this.writeShort(euckr.byteLength);
+		this.writeBytes(euckr.encode);
 	}
 
 	public writeOpcode(code: number) {

@@ -127,7 +127,7 @@ class LoginHandler {
 		// if client is not logged-in, need to disconnect
 		reader.skip(1);
 		const worldId = reader.readByte();
-		const channelId = reader.readByte() + 1;
+		const channel = reader.readByte() + 1;
 
 		// World ID 를 기준으로 캐릭터 목록을 조회합니다.
 		const chars = await client.loadCharacters(worldId);
@@ -136,7 +136,7 @@ class LoginHandler {
 		// if (chars !== null && true) {
 		if (chars !== null && true) {
 			client.worldId = worldId;
-			client.channelId = channelId;
+			client.channel = channel;
 			client.sendPacket(LoginPacket.getCharList(null, chars, client.charslots));
 		} else {
 			client.getSession().destroy();

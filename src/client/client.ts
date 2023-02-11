@@ -11,15 +11,16 @@ import { MapleCharacter } from "./MapleCharacter";
 import Queue from "queue";
 import { buffer } from "stream/consumers";
 import prisma from "../database/prisma";
+import LoginPacket from "../tools/packet/LoginPacket";
 
 // 초기 iv(Initialization vector)값. 랜덤이어도 상관없을듯?
-const initialIvReceive = new Uint8Array([0x65, 0x56, 0x12, 0xfd]);
-const initialIvSend = new Uint8Array([0x2f, 0xa3, 0x65, 0x43]);
+const ivRecv = new Uint8Array([0x65, 0x56, 0x12, 0xfd]);
+const ivSend = new Uint8Array([0x2f, 0xa3, 0x65, 0x43]);
 
+// Socket 을 통해 connection 이 생성되면 각 커넥션마다 생성되는 Client 객체
 class MapleClient {
-	createdChar(charId: number) {
-		// allowedChar.add(id) // 접속 허용 목록 같은건가?
-	}
+	createdChar(charId: number) {} // allowedChar.add(id) // 접속 허용 목록 같은건가?
+
 	public static LOGIN_NOTLOGGEDIN = 0;
 	public static LOGIN_SERVER_TRANSITION = 1;
 	public static LOGIN_LOGGEDIN = 2;
@@ -30,7 +31,7 @@ class MapleClient {
 
 	private player: MapleCharacter; // 임시
 
-	private channel: number = 1;
+	public channel: number = 1;
 
 	private world: number;
 	private birthday: number;
@@ -63,9 +64,6 @@ class MapleClient {
 
 	private socket: Socket;
 
-	// DB Account 객체
-	// public account: Account;
-
 	// 패킷암호화
 	private inputStream: PacketCrypto;
 	private outputStream: PacketCrypto;
@@ -77,20 +75,43 @@ class MapleClient {
 
 	// 접속중인 월드/채널 정보
 	public worldId: number | undefined;
-	public channelId: number;
-	public ipv4: string;
+	public ip: string;
 
-	// MapleClient Constructor
-	constructor(socket: Socket, channelId = 1) {
+	public cashShop: boolean = false;
+
+	// MapleClient 생성자
+	constructor(socket: Socket, channel: number) {
 		this.socket = socket;
-		this.ipv4 = this.socket.remoteAddress;
-		// this.channelId = channelId; // 우선 기본 1채널만 개발
+		this.ip = this.socket.remoteAddress;
 
-		this.inputStream = new PacketCrypto(initialIvReceive, 65);
-		this.outputStream = new PacketCrypto(initialIvSend, 0xffff - 65);
-		this.sendHandshake();
+		this.inputStream = new PacketCrypto(ivRecv, 65);
+		this.outputStream = new PacketCrypto(ivSend, 0xffff - 65);
 
-		// 핑퐁 타이머
+		this.channel = channel;
+		if (channel == -10) this.cashShop = true;
+
+		// 추후 일괄적인 관리를 위해 custom session 기능이 있으면 좋을듯
+		// this.session = new MapleSession(this)
+
+		this.run();
+	}
+
+	// 가독성을 위해 분리...
+	private run() {
+		try {
+			this.sendHandshake();
+			this.startPingPong();
+		} catch (err) {
+			console.log(err);
+		}
+	}
+
+	private sendHandshake(): void {
+		const hello = LoginPacket.getHello(ivRecv, ivSend);
+		this.socket.write(hello); // 주의: sendPacket 으로 보내면 안됨
+	}
+
+	private startPingPong() {
 		this.pingpongTask = setInterval(() => {
 			const pingPacket = new PacketWriter(Opcodes.serverOpcodes.PING);
 			this.sendPacket(pingPacket.getBuffer());
@@ -155,35 +176,35 @@ class MapleClient {
 	}
 
 	// 핸드쉐이크 전송 (in constructor)
-	private sendHandshake(): void {
-		const packet = new PacketWriter();
-		packet.writeShort(13 + "98369".length);
-		packet.writeShort(291);
-		packet.writeString("98369");
-		packet.writeBytes(initialIvReceive);
-		packet.writeBytes(initialIvSend);
-		packet.writeByte(1);
-		this.socket.write(packet.getBuffer());
-	}
 
 	/**
 	 * 캐릭터를 조회하여 Array[MapleCharacter] 를 반환합니다
 	 * 반환된 목록은 어디선가 쓰입니다
 	 */
-	public async loadCharacters(serverId: number) {
+	public async loadCharacters(worldId: number) {
 		let charSlot: Array<MapleCharacter> = [];
 
-		// 캐릭터의 기본 정보를 조회합니다. 굳이 두번으로 나눌 필요가 있을까?
-		const rowChars = await this.loadCharactersInternal(serverId);
+		// // 캐릭터의 기본 정보를 조회합니다. 굳이 두번으로 나눌 필요가 있을까?
+		// const rowChars = await this.loadCharactersInternal(serverId);
 		/**
 		 * 기본 정보를 통해 게임에 필요한 모든 정보를 로딩합니다.
 		 * 조회한 데이터를 통해 인게임에 필요한 모든 정보를 담은 MapleCharacter 객체를 생성합니다.
 		 * 매우매우매우 중요한 부분입니다.
 		 */
-		for (const cni of rowChars) {
-			const c = await MapleCharacter.loadCharFromDB(this, cni.id, false);
-			charSlot.push(c);
+		// for (const cni of rowChars) {
+		// 	const c = await MapleCharacter.loadCharFromDB(this, cni.id, false);
+		// 	charSlot.push(c);
+		// }
+		try {
+			const characterList = await prisma.character.findMany({
+				where: { world: worldId, account_id: this.accId },
+				include: { inventory_item: true, inventory_slot: true },
+			});
+		} catch (err) {
+			console.log(err);
 		}
+		return charSlot;
+
 		return charSlot;
 	}
 

@@ -3,96 +3,68 @@ import { Point } from "../lib/Point";
 import { AnimatedMapleMapObject } from "../server/maps/AnimatedMapleMapObject";
 import MapleClient from "./Client";
 import MapleInventory from "./inventory/MapleInventory";
-import momoent from "moment";
 import CharacterStats from "./CharacterStats";
 import { InvType } from "./inventory/InventoryType";
+import CharacterHelper from "./CharacterHelper";
+import { Prisma } from "@prisma/client";
 
 export class MapleCharacter extends AnimatedMapleMapObject {
 	// private static serialVersionUID = 845748950829;
 
-	// Character default information
-	public world: number;
-	public id: number;
-	public level: number;
-	public name: string;
-	public gender: number;
+	// 캐릭터 정보
+	public id: number = null;
+	public name: string = null;
+	public job: number = 1;
+	public world: number = 0;
+	public gender: number = 0;
+	public mount: any = null;
+	public meso: number = 0;
+	public exp: number = 0;
+	public map_id: number = 0;
+	public initialSpawnPoint: number = 3;
 
-	public mount: any;
-	public meso: number;
-	public exp: number;
+	// 능력치
+	public level: number = 1;
+	public stats = new CharacterStats();
+	public fame: number = 0;
+	public remainingSp = [0, 0, 0, 0, 0, 0, 0, 0];
+	public remainingAp: number = 0;
 
-	public map_id: number;
+	// 기타 능력치
+	public hpApUsed: number = 0; // 피작 횟수
 
-	// Character stats
-	public stats: CharacterStats;
+	public buddy_capacity: number = 20; // 친구목록 제한
 
-	public fame: number;
+	// 외형
+	public hair: number = 0;
+	public face: number = 0;
+	public skin: number = 0;
 
+	// 접속 관련 정보
+	public client: MapleClient = null;
+	public loginTime: number = 0;
+	public accountId: number = null;
+
+	// GM 관련
+	public gmLevel: number = 0;
 	public hide: boolean = false;
-	public buddy_capacity: number = 20;
-	// Character outlook
-	public hair: number;
-	public face: number;
-	public skin: number;
 
-	public client: MapleClient;
-
-	public gmLevel: number;
-
-	public initialSpawnPoint: number;
-	public loginTime: number;
-
+	// 길드
+	public guildid: number = 0;
 	public guildrank: number = 5;
+
 	public allianceRank: number = 5;
 
-	public fairyExp: number;
-	public subcategory: number;
+	public maplePoint: number;
+	public aCash: number;
 
-	public mulung_energy: number;
-	public combo: number;
-	public availableCP: number;
-	public totalCP: number;
-	public hpApUsed: number;
-	public job: number;
-	public remainingAp: number;
-	public scrolledPosition: number;
-
-	public accountId: number;
-
-	public guildid: number = 0;
-	public fallcounter: number;
-	public maplepoints: number;
-	public acash: number;
-	public chair: number;
-	public itemEffect: number;
-	public points: number;
-	public vpoints: number;
-
+	// 랭킹
 	public rank: number = 1;
 	public rankMove: number = 0;
 	public jobRank: number = 1;
 	public jobRankMove: number = 0;
-	public marriageId: number;
-	public engageId: number;
-	public marriageItemId: number;
-	public dotHP: number;
 
-	public battleshipHP: number;
-	public coconutteam: number;
-	public currentrep: number;
-	public totalrep: number;
-	public challenge: number;
-	public donatecash: number;
-	public bookCover: number;
-	public weddingGiftGive: number;
 	public old: Point;
-
-	public wishlist: number[] = new Array<number>(10);
-	public rocks: number[] = new Array<number>(10);
-	public savedLocation: number[] = new Array<number>(10);
-	public regrocks: number[] = new Array<number>(10);
-	public hyperrocks: number[] = new Array<number>(10);
-	public remainingSp: Array<number>;
 
 	public inventory: Array<MapleInventory>;
 	public quests: Map<any, any>;
@@ -103,7 +75,7 @@ export class MapleCharacter extends AnimatedMapleMapObject {
 		this.setStance(0);
 		this.setPosition(new Point({ x: 0, y: 0 }));
 
-		// 인벤토리 초기화
+		// 인벤토리를 생성합니다. 아직 데이터가 적재되지 않았습니다
 		this.inventory = [
 			new MapleInventory(InvType.UNDEFINED),
 			new MapleInventory(InvType.EQUIP),
@@ -118,27 +90,18 @@ export class MapleCharacter extends AnimatedMapleMapObject {
 		this.quests = new Map<any, any>();
 		// 스킬 초기화
 		this.skills = new Map<any, any>();
-		// 스텟 로딩
-		// this.stats = new PlayerStats();
-
-		this.remainingSp = [0, 0, 0, 0, 0, 0, 0, 0];
-		this.stats = new CharacterStats();
 	}
 
-	public static getDefault(client: MapleClient, jobType: number) {
+	/**
+	 * 캐릭터 생성을 위한 Skeletion 을 반환합니다
+	 * @param client MapleClient Object
+	 * @param jobCode 캐릭터 직업 Code
+	 */
+	public static async getSkeletonForNewChar(client: MapleClient, jobCode: number) {
 		const skel = new MapleCharacter(false);
 		skel.client = client;
-		skel.map_id = null;
-		skel.exp = 0;
-		skel.gmLevel = 0;
-		skel.job = jobType;
-		skel.meso = 0;
-		skel.level = 1;
-		skel.remainingAp = 0;
-		skel.fame = 0;
 		skel.accountId = client.accId;
-		// skel.buddyList = new BuddyList(20)
-		skel.buddy_capacity = 20;
+		skel.job = jobCode;
 		skel.stats.str = 12;
 		skel.stats.dex = 5;
 		skel.stats.int = 4;
@@ -148,143 +111,177 @@ export class MapleCharacter extends AnimatedMapleMapObject {
 		skel.stats.max_mp = 5;
 		skel.stats.mp = 5;
 
+		// 현재 로그인한 계정의 정보를 조회하여 추가 정보 적재
+		const account = await prisma.account.findUnique({ where: { id: skel.accountId } });
+		if (account) {
+			skel.client.accName = account.name;
+			skel.aCash = account.ACash;
+			skel.maplePoint = account.mPoints;
+		}
 		return skel;
 	}
 
-	public getInventory(inventoryId: number) {
-		return this.inventory[inventoryId];
+	/**
+	 * 캐릭터의 인벤토리를 반환합니다
+	 * @param invType Inventory Type
+	 */
+	public getInventory(invType: number) {
+		if (invType == -1) invType = 6;
+		return this.inventory[invType];
 	}
 
 	/**
-	 * 캐릭터의 기본 정보(cid : character id) 를 통해
-	 * 단일 캐릭터의 모든 정보를 조회합니다.
-	 * 이후 MapleCharacter 에 정보를 담아 반환합니다.
-	 * 일단 임시로 대충 구현완료
+	 * DB로부터 조회한 데이터를 담은 캐릭터를 반환합니다.
+	 * @param client MapleClient 객체
+	 * @param charId 캐릭터 고유 ID
+	 * @param channelServer ?? default false
 	 */
-	public static async loadCharFromDB(client: MapleClient, cid: number, channelServer: boolean) {
-		// skeleton 생성하고 데이터 채운다 실시 악
-		const char: MapleCharacter = new MapleCharacter(channelServer);
+	public static async loadCharFromDB(client: MapleClient, charId: number, channelServer: boolean = false) {
+		const c: MapleCharacter = new MapleCharacter(channelServer);
 		try {
-			// Prisma character
-			const pchar = await prisma.character.findUnique({ where: { id: cid } });
-			char.name = pchar.name;
-			char.level = pchar.level;
-			char.fame = pchar.fame;
+			const pchar = await prisma.character.findUnique({
+				where: { id: charId },
+				//include: { inventoryItem: true, inventorySlot: true }, // 보유 아이템, 아이템 슬롯
+			});
 
-			char.stats.str = pchar.str;
-			char.stats.dex = pchar.dex;
-			char.stats.int = pchar.int;
-			char.stats.luk = pchar.luk;
-			char.stats.max_hp = pchar.max_hp;
-			char.stats.max_mp = pchar.max_mp;
-			char.stats.hp = pchar.hp;
-			char.stats.mp = pchar.mp;
+			c.name = pchar.name;
+			c.level = pchar.level;
+			c.fame = pchar.fame;
 
-			char.job = pchar.job;
-			char.gmLevel = pchar.gm;
-			char.hide = false; // isGM
+			c.stats.str = pchar.str;
+			c.stats.dex = pchar.dex;
+			c.stats.int = pchar.int;
+			c.stats.luk = pchar.luk;
+			c.stats.max_hp = pchar.maxhp;
+			c.stats.max_mp = pchar.maxmp;
+			c.stats.hp = pchar.hp;
+			c.stats.mp = pchar.mp;
 
-			char.exp = pchar.exp; // 화스 코드 식이 수상한데?
-			char.hpApUsed = pchar.hp_apUsed; // 피작 횟수?
+			c.job = pchar.job;
+			c.gmLevel = pchar.gm;
+			c.hide = false; // isGM
+
+			c.exp = pchar.exp; // [임시] 화스 코드 식이 수상한데? 확인해보자
+			c.hpApUsed = pchar.hpApUsed;
 
 			const spArr: string[] = pchar.sp.split(",");
 			for (let i = 0; i < spArr.length; i++) {
-				char.remainingSp[i] = ~~spArr;
+				c.remainingSp[i] = ~~spArr;
 			}
 
-			char.remainingAp = pchar.ap;
-			char.meso = pchar.meso;
-			char.skin = pchar.skin;
-			char.gender = pchar.gender;
-			char.hair = pchar.hair;
-			char.face = pchar.hair;
-			char.accountId = pchar.account_id;
+			c.remainingAp = pchar.ap;
+			c.meso = pchar.meso;
+			c.skin = pchar.skin;
+			c.gender = pchar.gender;
+			c.hair = pchar.hair;
+			c.face = pchar.hair;
+			c.accountId = pchar.account_id;
 
-			client.accId = char.accountId; // 얘 갑자기 왜 튀어나옴?
+			c.map_id = pchar.map;
+			c.initialSpawnPoint = pchar.spawnpoint;
+			c.world = pchar.world;
+			c.guildid = pchar.guildid;
+			c.guildrank = pchar.guildrank;
+			c.allianceRank = pchar.allianceRank;
 
-			char.map_id;
-			char.initialSpawnPoint;
-			char.world;
-			char.guildid;
-			char.guildrank;
-			char.allianceRank;
-			char.currentrep;
-			char.totalrep;
-			char.loginTime = new Date().getUTCMilliseconds();
-			// char.makeMFC 머고 이거
-			// char.buddyList = new BuddyList(char.buddyCapacity)
-			char.buddy_capacity = pchar.buddy_capacity; //친창 맥스
-			char.subcategory = 0; //pchar.subcategory
-			char.mount = {
-				owner: char,
+			c.loginTime = new Date().getUTCMilliseconds();
+			c.buddy_capacity = pchar.buddyCapacity; // 최대 친구 수
+			c.mount = {
+				owner: c,
 				skillId: 10001004,
 				fatigue: 0,
 				level: 1,
 				exp: 0,
-			}; // new MapleMount(char, char.stats.getSkillByJob(1004, char.job), 0, 1, 0)
-			char.rank = 1; // 임시
-			char.rankMove = 0; // 랭킹 변화수치
-			char.jobRank = 1;
-			char.jobRankMove = 0;
-			char.marriageId = 0;
-			char.engageId = 0; // ??
-			char.bookCover = 0;
-			// char.antiCheat = // Anti-cheat tracker
+			}; // // [임시] 뭔지 알아보기 new MapleMount(char, char.stats.getSkillByJob(1004, char.job), 0, 1, 0)
+			c.rank = 1; // [임시]
+			c.rankMove = 0; // [랭킹 변화수치]
+			c.jobRank = 1; // [임시]
+			c.jobRankMove = 0; //[임시]
 
-			const questStatus: any[] = null; // await prisma.queststatus.findMany({where:{character_id : char.id}})
-			const questStatusMobs: any[] = null; // await prisma.queststatus.findMany({where:{character_id : char.id}})
+			client.accId = c.accountId; // 얘 갑자기 왜 튀어나옴?
 
-			// for (const qs of questStatus){ 으쌰으쌰}
-			console.log(char);
-			return char;
+			// 여기서 인벤토리를 한번에 주면 깔끔하지 않나?
+			// char.inventory;
+
+			return c;
 		} catch (err) {
 			console.log(err);
 		}
 
-		return char;
+		return c;
 	}
 
-	//보류
-	public static async saveNewCharToDB(char: MapleCharacter, job: number) {
-		// 캐릭터 + 인벤토리 한방 생성
+	/**
+	 * [임시] 생성한 캐릭터를 데이터베이스에 저장합니다.
+	 * 나중에 반드시 개선합시다
+	 * @param char MapleCharacter Object
+	 * @param jobCode 캐릭터 직업 Code
+	 */
+	public static async saveNewCharToDB(char: MapleCharacter, jobCode: number) {
 		try {
-			const pChar = await prisma.character.create({
-				data: {
-					name: char.name,
-					acccount: { connect: { id: char.accountId } },
-					level: 1,
-					str: char.stats.str,
-					dex: char.stats.dex,
-					int: char.stats.int,
-					luk: char.stats.luk,
-					max_hp: char.stats.max_hp,
-					hp: char.stats.hp,
-					max_mp: char.stats.max_mp,
-					mp: char.stats.mp,
-					sp: char.remainingSp.toString().replace(/ /g, ""),
-					ap: char.remainingAp,
-					skin: char.skin,
-					gender: char.gender,
-					job: char.job,
-					hair: char.hair,
-					face: char.face,
-					map: 0,
-					meso: char.meso,
-					party: -1,
-					buddy_capacity: char.buddy_capacity,
-					// pets : "-1,-1,-1"
-					world: char.world,
-					inventory_slot: {
-						create: {
-							equip: 32,
-							use: 32,
-							setup: 32,
-							etc: 32,
-							cash: 32,
+			// 저장할 캐릭터 정보 만들어주는 함수
+			const { character: characterWithRest, equip: equips } = CharacterHelper.refineDataFromChar(char, jobCode);
+			// console.log(equip); OK refineDataFromChar 정상
+			const s = new Date().getMilliseconds();
+
+			// 속도? ㅈ까 일단 돌아가긴 해야할거아냐
+			// 생각보다 안느리네?ㅋㅋ
+			const bulkResult = await prisma.$transaction(async (tx) => {
+				// 1. 캐릭터, 인벤토리, 아이템(장비 제외) 생성
+				const createdChar = await tx.character.create({ data: characterWithRest });
+				for (const item of equips) {
+					await tx.inventoryItem.create({
+						data: {
+							character: { connect: { id: createdChar.id } },
+							itemCode: item.itemCode,
+							inventory_type: 0,
+							position: item.position,
+							quantity: item.quantity,
+							owner: "", // [임시]
+							GM_Log: "", // [임시]
+							uniqueid: item.uniqueId, // [임시] ItemLoader.java line 260, expensive if
+							expiredate: item.expiration,
+							flag: item.flag,
+							type: 0, // 인벤토리 0, 창고 1, 캐시샵 2, ..ItemLoader.java 확인
+							// gift
+							marriageId: item.marriageId,
+							inventory_equipment: {
+								create: {
+									upgradeslots: item.upgradeSlot,
+									level: item.level,
+									str: item.str,
+									dex: item.dex,
+									int: item.int,
+									luk: item.luk,
+									hp: item.hp,
+									mp: item.mp,
+									watk: item.watk,
+									matk: item.matk,
+									wdef: item.wdef,
+									mdef: item.mdef,
+									acc: item.acc,
+									avoid: item.avoid,
+									hands: item.hands,
+									speed: item.speed,
+									jump: item.jump,
+									// viciousHammer: equip.ViciousHammer,
+									itemEXP: 0, //equip.itemExp, [임시]
+									durability: item.durability,
+									enhance: item.enhance,
+									hpR: item.hpR,
+									mpR: item.mpR,
+									incSkill: item.incSkill,
+									charmEXP: item.charmExp,
+									pvpDamage: item.pvpDamage,
+								},
+							},
 						},
-					},
-				},
+					});
+				}
+				char.id = createdChar.id;
+				return true;
 			});
+			// if (bulkResult) console.log(new Date().getMilliseconds() - s);
 		} catch (err) {
 			console.log(err);
 		}
@@ -296,10 +293,10 @@ export class MapleCharacter extends AnimatedMapleMapObject {
 	public getType() {
 		throw new Error("Method not implemented.");
 	}
-	public sendSpawnData(client: MapleClient): void {
+	public sendSpawnData(client: MapleClient) {
 		throw new Error("Method not implemented.");
 	}
-	public sendDestroyData(client: MapleClient): void {
+	public sendDestroyData(client: MapleClient) {
 		throw new Error("Method not implemented.");
 	}
 }

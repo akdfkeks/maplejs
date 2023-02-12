@@ -90,7 +90,7 @@ class MapleClient {
 		this.channel = channel;
 		if (channel == -10) this.cashShop = true;
 
-		// 추후 일괄적인 관리를 위해 custom session 기능이 있으면 좋을듯
+		// 추후 일괄적인 관리를 위해 Custom session 있으면 좋을듯
 		// this.session = new MapleSession(this)
 
 		this.run();
@@ -133,13 +133,14 @@ class MapleClient {
 				},
 			});
 			if (!account) loginOk = 5;
-
-			this.accName = account.name;
-			this.accId = account.id;
-			this.gm = account.gm;
-			this.gender = account.gender;
-			this.loggedIn = true;
-			loginOk = this.loggedIn ? 0 : 4;
+			else {
+				this.accName = account.name;
+				this.accId = account.id;
+				this.gm = account.gm;
+				this.gender = account.gender;
+				this.loggedIn = true;
+				loginOk = this.loggedIn ? 0 : 4;
+			}
 		} catch (err) {
 			console.log(err);
 			loginOk = 6;
@@ -168,6 +169,8 @@ class MapleClient {
 
 	// Writer 객체로 된 패킷을 정렬해서 전송
 	public sendPacket(packet: Buffer): void {
+		// console.log("[SEND]");
+		// console.log(packet);
 		const header = this.outputStream.getPacketHeader(packet.length);
 		this.socket.write(header);
 
@@ -183,28 +186,24 @@ class MapleClient {
 	 */
 	public async loadCharacters(worldId: number) {
 		let charSlot: Array<MapleCharacter> = [];
-
-		// // 캐릭터의 기본 정보를 조회합니다. 굳이 두번으로 나눌 필요가 있을까?
-		// const rowChars = await this.loadCharactersInternal(serverId);
 		/**
-		 * 기본 정보를 통해 게임에 필요한 모든 정보를 로딩합니다.
-		 * 조회한 데이터를 통해 인게임에 필요한 모든 정보를 담은 MapleCharacter 객체를 생성합니다.
-		 * 매우매우매우 중요한 부분입니다.
+		 * 기본 정보를 조회하고, 이를통해 게임에 필요한 모든 정보를 로딩합니다
+		 * 조회한 데이터를 통해 인게임에 필요한 모든 정보를 담은 MapleCharacter 객체를 생성합니다
+		 * 매우매우매우 중요한 부분
 		 */
-		// for (const cni of rowChars) {
-		// 	const c = await MapleCharacter.loadCharFromDB(this, cni.id, false);
-		// 	charSlot.push(c);
-		// }
+
 		try {
-			const characterList = await prisma.character.findMany({
-				where: { world: worldId, account_id: this.accId },
-				include: { inventory_item: true, inventory_slot: true },
-			});
+			// 캐릭터 기본 정보 로딩
+			const cl = await this.loadCharactersInternal(worldId);
+
+			// 한방에 조회하도록 개선하기
+			for (const c of cl) {
+				const cb = await MapleCharacter.loadCharFromDB(this, c.id, false);
+				charSlot.push(cb);
+			}
 		} catch (err) {
 			console.log(err);
 		}
-		return charSlot;
-
 		return charSlot;
 	}
 

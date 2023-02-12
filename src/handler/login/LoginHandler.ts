@@ -1,12 +1,7 @@
 import MapleClient from "../../client/Client";
 import PacketReader from "../../packet/tools/PacketReader";
-import prisma from "../../database/prisma";
-
 import LoginPacket from "@/src/tools/packet/LoginPacket";
-import LittleEndianPacketWriter from "../../packet/tools/NewPacketWriter";
-import { cli } from "winston/lib/winston/config";
 import MaplePacketCreator from "../../tools/MaplePacketCreator";
-import { Channel } from "diagnostics_channel";
 import LoginHelper from "./LoginHelper";
 import { MapleCharacter } from "@/src/client/MapleCharacter";
 import MapleInventory from "@/src/client/inventory/MapleInventory";
@@ -25,6 +20,7 @@ class LoginHandler {
 		// const dualblade = 0; // 모험가: 0, 듀블: 1
 		const gender = client.gender; // 나중에 닉네임으로 남녀 만드는것도 가능할듯
 
+		// 패킷에서 캐릭터 정보 추출
 		const name = reader.readMapleAsciiString();
 		const face = reader.readInt();
 		const hair = reader.readInt();
@@ -34,19 +30,20 @@ class LoginHandler {
 		const bottom = reader.readInt();
 		const shoes = reader.readInt();
 		const weapon = reader.readInt();
+		// console.log(top, bottom, shoes, weapon);
 
-		const str = 12; // 뒤에 값 안읽고 그냥 상수로 사용하네..
-		const dex = 5; // 넷 다 readByte() 로 받아올 수 있음
-		const int = 4; // 근데 주사위가 없지 않나?
+		const str = 12; // 넷 다 readByte() 로 받아올 수 있음
+		const dex = 5; // 값 안읽고 그냥 상수로 사용하네
+		const int = 4; // 주사위가 없어서 이렇게 짜놓은듯
 		const luk = 4;
 
 		if (!LoginHelper.checkMakeCharInfo(gender > 0 ? true : false, face, hair, top, bottom, shoes, weapon)) {
-			console.log("[Error] 데이터가 .wz 와 일치하지 않습니다.");
+			console.log("[Error] 데이터가 WZ 와 일치하지 않습니다.");
 			client.getSession().destroy();
 		}
 
-		// 검증을 모두 마친 뒤, 인벤토리를 생성해야함
-		const newChar = MapleCharacter.getDefault(client, jobType);
+		// character skeleton 을 생성합니다
+		const newChar = await MapleCharacter.getSkeletonForNewChar(client, jobType);
 		newChar.world = client.worldId;
 		newChar.face = face;
 		newChar.hair = hair + hairColor;
@@ -58,40 +55,65 @@ class LoginHandler {
 		newChar.stats.int = int;
 		newChar.stats.luk = luk;
 
-		console.log("[LOG] Default character created");
+		// console.log("[LOG] Default character created");
 		// console.log(newChar);
 
+		// 아이템 관련 메서드를 가진 인스턴스
 		const li = ItemInformationProvider.getInstance();
 
-		// 인벤토리쪽이 제일 수상해
-		const equip: MapleInventory = newChar.getInventory(6); // 장착중인 장비
+		// 캐릭터의 인벤토리(장비) 객체를 불러옵니다. (당연히 비어있음)
+		// 이 equip 는 newChar 의 인벤토리를 참조하고 있습니다!!!
+		// 존나게 객체지향적인 방식입니다 사용에 주의가 필요해요
+		const equip: MapleInventory = newChar.getInventory(InvType.EQUIPPED);
 
-		let item: Item = li.getEquipById(top);
+		// Item Code 를 통해 item 객체를 만들어서 인벤토리에 추가합니다
+		// addFromDB() 는 item 객체를 받아 인벤토리에 추가하는 역할을 수행합니다
+		// 현재 DB 에 캐릭터가 존재하지 않고, 아이템이 메모리에 존재하므로
+		// DB 로 부터 불러온 척 하기 위해 해당 메서드를 사용합니다.
+		let item: Item = li.getEquipByCode(top);
 		item.position = -5;
 		equip.addFromDB(item);
 
 		if (bottom > 0) {
-			item = li.getEquipById(bottom);
+			item = li.getEquipByCode(bottom);
 			item.position = -6;
 			equip.addFromDB(item);
 		}
 
-		item = li.getEquipById(shoes);
+		item = li.getEquipByCode(shoes);
 		item.position = -7;
 		equip.addFromDB(item);
 
-		item = li.getEquipById(weapon);
+		item = li.getEquipByCode(weapon);
 		item.position = -11;
 		equip.addFromDB(item);
 
 		// 4161001: 초보자 안내서
-		if (jobType == 1) newChar.getInventory(InvType.ETC).addItem(new Item(4161001, 0, 1, 0));
+		// if (jobType == 1)
+		// 이거 왜 동작을 안하지?
+		newChar.getInventory(InvType.ETC).addItem(new Item(4161001, 0, 1, 0));
 
-		// 어쩌구 주저리주저리
+		// 무슨무슨 조건
 		if (true) {
-			MapleCharacter.saveNewCharToDB(newChar, jobType);
-			client.sendPacket(LoginPacket.addNewCharEntry(newChar, true));
-			// client.createdChar(char.id); 접속 허용 목록 기능? 같아보이는데 일단은 패쓰
+			// equip 을 포함한 인벤토리들은 newChar 내부의 객체를 참조하고 있으므로
+			// newChar 를 전달해주면 됩니다~
+			// console.log(newChar.getInventory(InvType.EQUIPPED));
+			// console.log(newChar.getInventory(InvType.ETC));
+
+			// 생성한 캐릭터 저장
+			// 화스에서는 저장 결과를 기다리지 않는데
+			// 노드에서는 일단 대기하게 해봄
+			MapleCharacter.saveNewCharToDB(newChar, jobType).then(
+				() =>
+					// addNewCharEntry 에는 DB 조회를 하지 않는다
+					// 따라서 newChar 를 그냥 패킷에 담아서 보내면 됨
+					// (생성한것처럼 보이게 작동한다는 의미)
+					// 근데 생성하고 개빠르게 접속하면 데이터 생성중에 서버 죽을거같은디?
+					// save 결과를 대기해야할지도?
+					// 이새기가 제대로된 값을 안보내주고 있는거같어~
+					client.sendPacket(LoginPacket.addNewCharEntry(newChar, true))
+				// client.createdChar(char.id); 접속 허용 목록 기능? 같아보이는데 일단은 패쓰
+			);
 		} else {
 			client.sendPacket(LoginPacket.addNewCharEntry(newChar, false));
 		}
@@ -100,7 +122,7 @@ class LoginHandler {
 	public static async login(client: MapleClient, reader: PacketReader) {
 		const name = reader.readMapleAsciiString();
 		const password = reader.readMapleAsciiString();
-		// console.log(name, password);
+		console.log(name, password);
 		// 아이디로 계정 조회
 
 		const loginOk = await client.login(name, password);
@@ -126,14 +148,15 @@ class LoginHandler {
 	public static async charListRequest(client: MapleClient, reader: PacketReader) {
 		// if client is not logged-in, need to disconnect
 		reader.skip(1);
+
 		const worldId = reader.readByte();
 		const channel = reader.readByte() + 1;
 
 		// World ID 를 기준으로 캐릭터 목록을 조회합니다.
-		const chars = await client.loadCharacters(worldId);
+		// 이제 진짜 얘는 다 고침 (스텟 로딩까지 다 만들었음)
+		const chars: Array<MapleCharacter> = await client.loadCharacters(worldId);
 
-		// true 자리에 채널 인스턴스 존재를 확인하는 코드 대체
-		// if (chars !== null && true) {
+		// true에 월드 상태체크, ..등등
 		if (chars !== null && true) {
 			client.worldId = worldId;
 			client.channel = channel;

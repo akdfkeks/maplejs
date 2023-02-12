@@ -5,7 +5,6 @@ import CashshopServer from "./handler/cashshop/CashshopServer";
 import ChannelServer from "./handler/channel/ChannelServer";
 import EtcServer from "./handler/etc/EtcServer";
 import LoginServer from "./handler/login/LoginServer";
-import ServerFactory from "./server/ServerFactory";
 
 const main = async () => {
 	await prisma

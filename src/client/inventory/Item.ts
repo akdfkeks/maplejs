@@ -1,56 +1,56 @@
 class Item {
-	public id: number;
+	public itemCode: number;
 	public position: number;
 	public quantity: number;
 	public flag: number;
-
-	public str: number;
-	public dex: number;
-	public int: number;
-	public luk: number;
-	public hp: number;
-	public mp: number;
-	public matk: number;
-	public mdef: number;
-	public watk: number;
-	public wdef: number;
-	public acc: number;
-	public avoid: number;
-	public hands: number;
-	public speed: number;
-	public jump: number;
-	public enhance: number;
-	public upgradeSlots: number;
-	public level: number;
-	public itemEXP: number;
-	public durability: number;
-	public vicioushammer: number;
-	public potential1: number;
-	public potential2: number;
-	public potential3: number;
-	public charmExp: number;
-	public pvpDamage: number;
-	public hpR: number;
-	public mpR: number;
-	public incSkill: number;
-
-	private expiration: bigint = BigInt(-1);
-	private inventoryitemid = 0;
-	private pet = null;
+	public expiration: bigint = BigInt(-1);
+	public inventoryId = 0; // 아이템이 소속된 인벤토리의 고유 ID 로 추청
+	public pet = null; // 임시
 	public uniqueId: number;
-	private marriageId = null;
+	public marriageId: number;
 
-	constructor(id: number, position: number, quantity: number, flag?: number, uniqueid: number = -1) {
-		this.id = id;
+	// public owner : string
+	// public gmLog : string
+	// public giftFrom : string
+	// public ring : MapleRing
+
+	constructor(itemCode: number, position: number, quantity: number, flag: number = 0, uniqueid: number = -1) {
+		this.itemCode = itemCode;
 		this.position = position;
 		this.quantity = quantity;
+		this.flag = flag;
 		this.uniqueId = uniqueid;
 		this.marriageId = 0;
-		if (flag) this.flag = flag;
 	}
 
 	public copy() {
-		return new Item(this.id, this.position, this.quantity, this.flag, this.uniqueId);
+		const i = new Item(this.itemCode, this.position, this.quantity, this.flag, this.uniqueId);
+		i.pet = this.pet;
+		// i.owner = this.owner;
+		// i.GameMaster_log = this.GameMaster_log;
+		i.expiration = this.expiration;
+		// i.giftFrom = this.giftFrom;
+		i.marriageId = this.marriageId;
+		return i;
+	}
+
+	public getType() {
+		return 2; // Item 이면 2?
+	}
+
+	public compareWith(other: Item) {
+		if (Math.abs(this.position) < Math.abs(other.position)) return -1; // different
+		else if (Math.abs(this.position) == Math.abs(other.position)) return 0; // same position
+		else return 1; // ??
+	}
+
+	public equals(other: Item) {
+		return (
+			this.uniqueId == other.uniqueId &&
+			this.itemCode == other.itemCode &&
+			this.quantity == other.quantity &&
+			Math.abs(this.position) == Math.abs(other.position)
+		);
 	}
 }
 

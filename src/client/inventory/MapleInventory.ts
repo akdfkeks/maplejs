@@ -2,9 +2,54 @@ import lodash from "lodash";
 import { InvType } from "./InventoryType";
 import Item from "./Item";
 
+type position = number;
+
 class MapleInventory {
+	// 여기서 number 는 아이템의 위치(position)
+	private inventory: Map<position, Item>;
+	private slotLimit = 0;
+	// 0: undefined, 1: equip, 2: use, 3: setup, 4: etc, 5: cash, -1: equipped
+	public invType: number;
+
+	constructor(invType: number) {
+		this.invType = invType > -2 && invType < 6 ? invType : 0;
+		this.inventory = new Map<number, Item>();
+	}
+
 	public addFromDB(item: Item) {
 		this.inventory.set(item.position, item);
+	}
+
+	public addSlot(size: number) {
+		this.slotLimit += size;
+		if (this.slotLimit > 96) this.slotLimit = 96;
+	}
+
+	public getItem(slot: position) {
+		return this.inventory.get(slot);
+	}
+
+	public getSlotLimit() {
+		return this.slotLimit;
+	}
+
+	public setSlotLimit(size: number) {
+		if (size > 96) size = 96;
+		this.slotLimit = size;
+	}
+
+	public findById(itemId: number) {
+		for (const item of this.inventory.values()) {
+			if (item.itemCode == itemId) return item;
+			return null;
+		}
+	}
+
+	public findByUniqueId(itemId: number) {
+		for (const item of this.inventory.values()) {
+			if (item.uniqueId == itemId) return item;
+			return null;
+		}
 	}
 
 	public addItem(item: Item) {
@@ -27,17 +72,13 @@ class MapleInventory {
 		return this.inventory.size + margin >= this.slotLimit;
 	}
 
-	public itemList() {
-		return lodash.cloneDeepWith(this.inventory.values());
+	public getCopiedItemList() {
+		// if (this.inventory.size <= 0) return [];
+		return [...this.inventory.values()];
 	}
-	private inventory: Map<number, Item>;
-	private slotLimit = 0;
-	// 0: undefined, 1: equip, 2: use, 3: setup, 4: etc, 5: cash, -1: equipped
-	private invType: number;
 
-	constructor(invType: number) {
-		this.invType = invType;
-		this.inventory = new Map<number, Item>();
+	public list() {
+		return this.inventory.values();
 	}
 }
 

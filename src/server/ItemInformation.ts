@@ -6,7 +6,7 @@ class ItemInformation {
 	public incSkill: Array<number>;
 	public slotMax: number;
 	public itemMakeLevel: number;
-	public eq: Equip = null;
+	public equip: Equip = null;
 	public equipStats: Map<string, number>;
 	public price: number = 0;
 	public itemId: number;

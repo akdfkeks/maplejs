@@ -4,6 +4,7 @@ import ItemInformation from "./ItemInformation";
 
 class ItemInformationProvider {
 	private static instance: ItemInformationProvider = null;
+	// Map<ItemCode, ItemInformation>
 	protected dataCache = new Map<number, ItemInformation>();
 
 	public static getInstance() {
@@ -14,17 +15,17 @@ class ItemInformationProvider {
 	private constructor() {}
 
 	// ringId 가 뭘까..
-	public getEquipById(equipId: number, ringId: number = -1) {
-		const i: ItemInformation = this.getItemInformation(equipId);
-		if (i == null) return new Equip(equipId, 0, ringId, 0);
-		const eq = lodash.cloneDeepWith(i.eq);
+	public getEquipByCode(equipCode: number, ringId: number = -1) {
+		const itemInfo: ItemInformation = this.getItemInformationFromCache(equipCode);
+		if (!itemInfo) return new Equip(equipCode, 0, ringId, 0);
+		const eq = lodash.cloneDeepWith(itemInfo.equip);
 		eq.uniqueId = ringId;
 		return eq;
 	}
 
-	public getItemInformation(itemId: number) {
-		if (itemId < 0) return null;
-		return this.dataCache.get(itemId);
+	public getItemInformationFromCache(itemCode: number) {
+		if (itemCode < 0) return null;
+		return this.dataCache.get(itemCode);
 	}
 }
 

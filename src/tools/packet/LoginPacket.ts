@@ -2,22 +2,15 @@ import MapleClient from "@/src/client/Client";
 import LittleEndianPacketWriter from "@/src/packet/tools/NewPacketWriter";
 import Opcodes from "@/src/packet/tools/Opcodes";
 import { server } from "@/config.json";
-import { open } from "fs";
 import { MapleCharacter } from "@/src/client/MapleCharacter";
 import PacketHelper from "./PacketHelper";
+import fs from "fs";
 
 /**
  * 적절한 패킷을 생성하고 전송하는 역할
  */
 class LoginPacket {
-	static addNewCharEntry(char: MapleCharacter, success: boolean) {
-		const pm = new LittleEndianPacketWriter();
-		pm.writeOpcode(Opcodes.serverOpcodes.ADD_NEW_CHAR_ENTRY);
-		pm.writeByte(success ? 0 : 1); // 캐릭터 생성 성공: 0, 실패: 1
-		return pm.getPacket();
-	}
 	private static version: string;
-
 	static {
 		let ret = 0;
 		ret ^= 65 & 0x7fff;
@@ -36,6 +29,17 @@ class LoginPacket {
 		pm.writeBytes(recvIv);
 		pm.writeBytes(sendIv);
 		pm.writeByte(1); // 1 = KMS, 2 = KMST, 7 = MSEA, 8 = GlobalMS, 5 = Test Server
+		return pm.getPacket();
+	}
+
+	static addNewCharEntry(char: MapleCharacter, success: boolean) {
+		const pm = new LittleEndianPacketWriter();
+		pm.writeOpcode(Opcodes.serverOpcodes.ADD_NEW_CHAR_ENTRY);
+		pm.writeByte(success ? 0 : 1); // 캐릭터 생성 성공: 0, 실패: 1
+		this.addCharEntry(pm, char, false);
+
+		fs.writeFileSync("hex.txt", pm.getPacket().toString("hex"));
+
 		return pm.getPacket();
 	}
 
@@ -104,7 +108,7 @@ class LoginPacket {
 	}
 
 	public static deleteCharResponse() {
-		console.log("Not yet");
+		// console.log("Not yet");
 	}
 
 	public static secondPasswordResponse(op1: number, op2: number) {
@@ -152,6 +156,11 @@ class LoginPacket {
 	public static getCharList(secondPw: string, characters: Array<MapleCharacter>, charSlot: number) {
 		const pm = new LittleEndianPacketWriter();
 
+		// console.log("[LOG] 보유 캐릭터 목록");
+		// for (const char of characters) {
+		// 	console.log(char.name);
+		// } OK 조회 잘 됨
+
 		pm.writeOpcode(Opcodes.serverOpcodes.CHARLIST);
 		pm.writeByte(0); // ??
 		pm.writeInt(0); // IDCODE2 ??
@@ -171,7 +180,7 @@ class LoginPacket {
 		return pm.getPacket();
 	}
 
-	private static addCharEntry(pm: LittleEndianPacketWriter, char: MapleCharacter, ranking: boolean) {
+	private static addCharEntry(pm: LittleEndianPacketWriter, char: MapleCharacter, ranking: boolean = false) {
 		// 캐릭터 능력치 패킷 등록
 		PacketHelper.addCharStats(pm, char);
 		// 캐릭터 외형 패킷 등록

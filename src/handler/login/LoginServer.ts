@@ -1,5 +1,5 @@
 import MapleClient from "@/src/client/Client";
-import PacketHandlerManager from "@/src/client/PacketHandler";
+import PacketHandler from "@/src/client/PacketHandler";
 import net from "net";
 
 const LoginServer = () => {
@@ -10,15 +10,12 @@ const LoginServer = () => {
 		const client = new MapleClient(socket, -1);
 
 		socket.on("data", async (data) => {
-			const reader = client.getPacketReader(data); //reader : 복호화된 Buffer 가 담긴 reader 객체
+			const reader = client.getPacketReader(data);
 
 			if (reader) {
 				try {
-					const header_num = reader.readShort();
-					const packetHandler = PacketHandlerManager.getHandler(header_num);
-
-					packetHandler(client, reader);
-					console.log(reader.getBuffer());
+					// reader 는 클라이언트 안에 있는데 굳이?
+					PacketHandler.handlePacket(client, reader);
 				} catch (err) {
 					console.log(err);
 				}

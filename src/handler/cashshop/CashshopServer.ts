@@ -1,5 +1,5 @@
 import MapleClient from "@/src/client/Client";
-import PacketHandlerManager from "@/src/client/PacketHandler";
+import PacketHandler from "@/src/client/PacketHandler";
 import net from "net";
 
 const CashshopServer = () => {
@@ -14,11 +14,7 @@ const CashshopServer = () => {
 
 			if (reader) {
 				try {
-					const header_num = reader.readShort();
-					const packetHandler = PacketHandlerManager.getHandler(header_num);
-
-					packetHandler(client, reader);
-					console.log(reader.getBuffer());
+					PacketHandler.handlePacket(client, reader);
 				} catch (err) {
 					console.log(err);
 				}

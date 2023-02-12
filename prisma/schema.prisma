@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,83 +8,1481 @@ datasource db {
 }
 
 model Account {
-  id              Int             @id @default(autoincrement()) @db.UnsignedInt
-  email           String?         @unique @db.VarChar(256)
-  name            String          @unique @db.VarChar(50)
-  password        String          @default("") @db.VarChar(256)
-  second_password String?         @db.VarChar(256)
-  gm              Int             @default(0) @db.UnsignedTinyInt
-  gender          Int             @default(0) @db.UnsignedTinyInt
-  logged_in       Boolean         @default(false)
-  last_login      DateTime?       @db.Timestamp
-  last_ip         String          @db.VarChar(64)
-  created_at      DateTime        @default(now()) @db.Timestamp
-  birthday        DateTime        @db.Date
-  mac_address     String?         @db.TinyText
-  cash            Int             @default(0) @db.UnsignedMediumInt
-  point           Int             @default(0) @db.UnsignedMediumInt
-  Charactor       Character[]
-  InventoryItem   InventoryItem[]
+  id              Int       @id @default(autoincrement())
+  name            String    @unique @default("") @db.VarChar(50)
+  password        String    @default("") @db.VarChar(128)
+  salt            String?   @db.VarChar(32)
+  second_password String?   @db.VarChar(134)
+  loggedin        Boolean   @default(false)
+  lastlogin       DateTime? @db.Timestamp(0)
+  createdat       DateTime  @default(now()) @db.Timestamp(0)
+  birthday        DateTime  @default(dbgenerated("('2000-01-01')")) @db.Date
+  gm              Int       @default(0) @db.TinyInt
+  email           String?   @db.TinyText
+  greason         Int?      @db.UnsignedTinyInt
+  ACash           Int       @default(0)
+  mPoints         Int       @default(0)
+  gender          Int       @default(0) @db.TinyInt
+
+  storage   Storage[]
+  Character Character[]
+  Battlelog Battlelog[] @ignore
+
+  @@index([id])
+}
+
+model Achievement {
+  achievement_id Int @default(0)
+  charid         Int @default(0)
+  account_id     Int @default(0)
+
+  @@id([achievement_id, charid])
+  @@index([account_id], map: "account_id")
+  @@index([achievement_id], map: "achievement_id")
+  @@index([charid], map: "charid")
+  @@ignore
+}
+
+model Alliance {
+  id        Int    @id @default(autoincrement())
+  name      String @unique @db.VarChar(13)
+  leader_id Int
+  guild1    Int
+  guild2    Int
+  guild3    Int    @default(0)
+  guild4    Int    @default(0)
+  guild5    Int    @default(0)
+  rank1     String @default("Master") @db.VarChar(13)
+  rank2     String @default("Jr.Master") @db.VarChar(13)
+  rank3     String @default("Member") @db.VarChar(13)
+  rank4     String @default("Member") @db.VarChar(13)
+  rank5     String @default("Member") @db.VarChar(13)
+  capacity  Int    @default(2)
+  notice    String @default("") @db.VarChar(100)
+
+  @@index([id], map: "id")
+  @@index([leader_id], map: "leader_id")
+}
+
+model Auth_server_channel_ip {
+  channelconfigid Int    @id @default(autoincrement()) @db.UnsignedInt
+  channel_id      Int    @default(0) @db.UnsignedInt
+  name            String @db.TinyText
+  value           String @db.TinyText
+
+  @@index([channel_id], map: "channel_id")
+  @@ignore
+}
+
+model Battlelog {
+  id        Int      @id @default(autoincrement())
+  acc_id_to Int      @default(0)
+  when      DateTime @default(now()) @db.Timestamp(0)
+  account   Account  @relation(fields: [acc_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "battlelog_ibfk_1")
+  acc_id    Int      @default(0)
+
+  @@index([acc_id], map: "acc_id")
+  @@ignore
+}
+
+model Bbs_replies {
+  replyid   Int    @id @default(autoincrement()) @db.UnsignedInt
+  threadid  Int    @db.UnsignedInt
+  postercid Int    @db.UnsignedInt
+  timestamp BigInt @db.UnsignedBigInt
+  content   String @default("") @db.VarChar(26)
+  guildid   Int    @default(0)
+}
+
+model Bbs_threads {
+  threadid      Int    @id @default(autoincrement()) @db.UnsignedInt
+  postercid     Int    @db.UnsignedInt
+  name          String @default("") @db.VarChar(26)
+  timestamp     BigInt @db.UnsignedBigInt
+  icon          Int    @db.UnsignedSmallInt
+  startpost     String @db.Text
+  guildid       Int    @db.UnsignedInt
+  localthreadid Int    @db.UnsignedInt
+}
+
+model Buddy {
+  id           Int       @id @default(autoincrement())
+  character_id Int       @db.UnsignedInt
+  buddyid      Int
+  pending      Int       @default(0) @db.TinyInt
+  groupname    String    @default("그룹 미지정") @db.VarChar(16)
+  character    Character @relation(fields: [character_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "buddy_ibfk_1")
+
+  @@index([character_id], map: "buddy_ibfk_1")
+  @@index([buddyid], map: "buddyid")
+  @@index([id], map: "id")
+}
+
+model Cashshop_limit_sell {
+  serial Int @id
+  amount Int @default(0)
+}
+
+model Cashshop_modified_items {
+  serial         Int     @id
+  discount_price Int     @default(-1)
+  mark           Int     @default(-2) @db.TinyInt
+  showup         Boolean @default(false)
+  itemid         Int     @default(0)
+  priority       Int     @default(-1) @db.TinyInt
+  package        Boolean @default(false)
+  period         Int     @default(0) @db.TinyInt
+  gender         Int     @default(-1) @db.TinyInt
+  count          Int     @default(0) @db.TinyInt
+  meso           Int     @default(0)
+  unk_1          Boolean @default(false)
+  for_pc         Int     @default(-1) @db.TinyInt
+  unk_3          Boolean @default(false)
+  extra_flags    Int     @default(0)
+}
+
+model Character_slots {
+  id        Int @id @default(autoincrement())
+  acc_id    Int @default(0)
+  worldid   Int @default(0)
+  charslots Int @default(6)
+
+  @@index([acc_id], map: "acc_id")
+  @@index([id], map: "id")
 }
 
 model Character {
-  id             Int      @id @default(autoincrement()) @db.UnsignedInt
-  name           String   @unique
-  acccount       Account  @relation(fields: [account_id], references: [id])
-  account_id     Int      @db.UnsignedInt
-  world          Int      @default(0) @db.TinyInt
-  level          Int      @default(0) @db.UnsignedTinyInt
-  exp            Int      @default(0) @db.Int
-  ap             Int      @default(0)
-  sp             String   @default("0,0,0,0,0,0,0,0,0,0") @db.VarChar(255)
-  // sp             Int      @default(0)
-  str            Int      @default(0) @db.UnsignedSmallInt
-  dex            Int      @default(0) @db.UnsignedSmallInt
-  luk            Int      @default(0) @db.UnsignedSmallInt
-  int            Int      @default(0) @db.UnsignedSmallInt
-  hp             Int      @default(0) @db.UnsignedSmallInt
-  mp             Int      @default(0) @db.UnsignedSmallInt
-  max_hp         Int      @default(0) @db.UnsignedSmallInt
-  max_mp         Int      @default(0) @db.UnsignedSmallInt
-  hp_apUsed      Int      @default(0) @db.UnsignedSmallInt
-  meso           Int      @default(0) @db.UnsignedInt
-  job            Int      @default(0) @db.UnsignedSmallInt
-  gender         Int      @default(0) @db.UnsignedTinyInt
-  fame           Int      @default(0) @db.MediumInt
-  skin           Int      @default(0) @db.TinyInt
-  hair           Int      @default(0) @db.Int
-  face           Int      @default(0) @db.Int
-  map            Int      @default(0) @db.Int
-  spawn_point    Int      @default(0) @db.SmallInt
-  gm             Int      @default(0) @db.UnsignedTinyInt
-  party          Int      @default(0) @db.Int
-  buddy_capacity Int      @default(25) @db.SmallInt
-  created_at     DateTime @default(now()) @db.Timestamp
+  id                Int              @id @default(autoincrement()) @db.UnsignedInt
+  account           Account          @relation(fields: [account_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  account_id        Int              @default(0)
+  world             Int              @default(0) @db.TinyInt
+  name              String           @default("") @db.VarChar(13)
+  level             Int              @default(0) @db.UnsignedInt
+  exp               Int              @default(0)
+  str               Int              @default(0)
+  dex               Int              @default(0)
+  luk               Int              @default(0)
+  int               Int              @default(0)
+  hp                Int              @default(0)
+  mp                Int              @default(0)
+  maxhp             Int              @default(0)
+  maxmp             Int              @default(0)
+  meso              Int              @default(0)
+  hpApUsed          Int              @default(0)
+  job               Int              @default(0)
+  skin              Int              @default(0) @db.TinyInt
+  gender            Int              @default(0) @db.TinyInt
+  fame              Int              @default(0)
+  hair              Int              @default(0)
+  face              Int              @default(0)
+  ap                Int              @default(0)
+  map               Int              @default(0)
+  spawnpoint        Int              @default(0)
+  gm                Int              @default(0) @db.TinyInt
+  party             Int              @default(0)
+  buddyCapacity     Int              @default(25)
+  createdate        DateTime         @default(now()) @db.Timestamp(0)
+  guildid           Int              @default(0) @db.UnsignedInt
+  guildrank         Int              @default(5) @db.UnsignedTinyInt
+  allianceRank      Int              @default(5) @db.UnsignedTinyInt
+  guildContribution Int              @default(0)
+  pets              String           @default("-1,-1,-1") @db.VarChar(13)
+  sp                String           @default("0,0,0,0,0,0,0,0,0,0") @db.VarChar(255)
+  subcategory       Int              @default(0)
+  rank              Int              @default(1)
+  rankMove          Int              @default(0)
+  jobRank           Int              @default(1)
+  jobRankMove       Int              @default(0)
+  marriageId        Int              @default(0)
+  family_id         Int              @default(0)
+  seniorid          Int              @default(0)
+  junior1           Int              @default(0)
+  junior2           Int              @default(0)
+  currentrep        Int              @default(0)
+  totalrep          Int              @default(0)
+  mbookcover        Int              @default(0)
+  buddy             Buddy[]
+  famelog           Famelog[]
+  keymap            Keymap[]
+  questinfo         Questinfo[]
+  queststatus       Queststatus[]
+  savedlocations    Savedlocations[]
+  skills            Skills[]
+  inventoryItem     InventoryItem[]
+  inventorySlot     InventorySlot?
 
-  inventory_item InventoryItem[]
-  inventory_slot InventorySlot?
+  @@index([account_id], map: "account_id")
+  @@index([family_id], map: "family_id")
+  @@index([guildid], map: "guildid")
+  @@index([id], map: "id")
+  @@index([marriageId], map: "marriageId")
+  @@index([seniorid], map: "seniorid")
+}
+
+model Cheatlog {
+  id              Int      @id @default(autoincrement())
+  character_id    Int      @default(0) @db.UnsignedInt
+  offense         String   @db.TinyText
+  count           Int      @default(0)
+  lastoffensetime DateTime @default(now()) @db.Timestamp(0)
+  param           String   @db.TinyText
+
+  @@index([character_id], map: "cid")
+}
+
+model Compensationlog_confirmed {
+  chrname String  @id @default("") @db.VarChar(25)
+  donor   Boolean @default(false)
+  value   Int     @default(0)
+  taken   Boolean @default(false)
+}
+
+model Csequipment {
+  inventory_equipment_id BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  inventory_item_id      BigInt @default(0) @db.UnsignedBigInt
+  upgradeslots           Int    @default(0)
+  level                  Int    @default(0)
+  str                    Int    @default(0)
+  dex                    Int    @default(0)
+  int                    Int    @default(0)
+  luk                    Int    @default(0)
+  hp                     Int    @default(0)
+  mp                     Int    @default(0)
+  watk                   Int    @default(0)
+  matk                   Int    @default(0)
+  wdef                   Int    @default(0)
+  mdef                   Int    @default(0)
+  acc                    Int    @default(0)
+  avoid                  Int    @default(0)
+  hands                  Int    @default(0)
+  speed                  Int    @default(0)
+  jump                   Int    @default(0)
+  ViciousHammer          Int    @default(0) @db.TinyInt
+  itemEXP                Int    @default(0)
+  durability             Int    @default(-1)
+  enhance                Int    @default(0) @db.TinyInt
+  potential1             Int    @default(0)
+  potential2             Int    @default(0)
+  potential3             Int    @default(0)
+  hpR                    Int    @default(0) @db.SmallInt
+  mpR                    Int    @default(0) @db.SmallInt
+  incSkill               Int    @default(-1)
+  charmEXP               Int    @default(-1) @db.SmallInt
+  pvpDamage              Int    @default(0) @db.SmallInt
+  csitem                 Csitem @relation(fields: [inventory_item_id], references: [inventory_item_id], onDelete: Cascade, onUpdate: Restrict, map: "csequipment_ibfk_1")
+
+  @@index([inventory_item_id], map: "inventory_item_id")
+}
+
+model Csitem {
+  inventory_item_id BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  character_id      Int?
+  account_id        Int?
+  package_id        Int?
+  itemid            Int           @default(0)
+  inventory_type    Int           @default(0)
+  position          Int           @default(0)
+  quantity          Int           @default(0)
+  owner             String?       @db.TinyText
+  GM_Log            String?       @db.TinyText
+  uniqueid          Int           @default(-1)
+  flag              Int           @default(0)
+  expiredate        BigInt        @default(-1)
+  type              Boolean       @default(false)
+  sender            String        @default("") @db.VarChar(13)
+  marriageId        Int           @default(0)
+  csequipment       Csequipment[]
+
+  @@index([account_id], map: "account_id")
+  @@index([character_id], map: "character_id")
+  @@index([character_id, inventory_type], map: "characterid__2")
+  @@index([character_id], map: "inventoryitem_ibfk_1")
+  @@index([inventory_type], map: "inventory_type")
+  @@index([package_id], map: "package_id")
+}
+
+model Donation {
+  id       Int      @id @default(autoincrement())
+  date     DateTime @default(now()) @db.Timestamp(0)
+  ip       String   @db.VarChar(15)
+  username String   @db.VarChar(13)
+  quantity Int?     @db.SmallInt
+  status   Boolean  @default(false)
+}
+
+model Donorlog {
+  id             Int    @id @default(autoincrement())
+  accname        String @default("") @db.VarChar(25)
+  acc_Id         Int    @default(0)
+  chrname        String @default("") @db.VarChar(25)
+  chrId          Int    @default(0)
+  log            String @default("") @db.VarChar(4096)
+  time           String @default("") @db.VarChar(25)
+  previousPoints Int    @default(0)
+  currentPoints  Int    @default(0)
+}
+
+model Drop_data {
+  id               BigInt @id @default(autoincrement())
+  dropperid        Int
+  itemid           Int    @default(0)
+  minimum_quantity Int    @default(1)
+  maximum_quantity Int    @default(1)
+  questid          Int    @default(0)
+  chance           Int    @default(0)
+
+  @@index([dropperid], map: "mobid")
+}
+
+model Drop_data_global {
+  id               BigInt  @id @default(autoincrement())
+  continent        Int
+  dropType         Boolean @default(false)
+  itemid           Int     @default(0)
+  minimum_quantity Int     @default(1)
+  maximum_quantity Int     @default(1)
+  questid          Int     @default(0)
+  chance           Int     @default(0)
+  comments         String? @db.VarChar(45)
+
+  @@index([continent], map: "mobid")
+}
+
+model Drop_data_p {
+  id               BigInt @id @default(autoincrement())
+  dropperid        Int
+  itemid           Int    @default(0)
+  minimum_quantity Int    @default(1)
+  maximum_quantity Int    @default(1)
+  questid          Int    @default(0)
+  chance           Int    @default(0)
+
+  @@index([dropperid], map: "mobid")
+}
+
+model Dueyequipment {
+  inventory_equipment_id BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  inventory_item_id      BigInt   @default(0) @db.UnsignedBigInt
+  upgradeslots           Int      @default(0)
+  level                  Int      @default(0)
+  str                    Int      @default(0)
+  dex                    Int      @default(0)
+  int                    Int      @default(0)
+  luk                    Int      @default(0)
+  hp                     Int      @default(0)
+  mp                     Int      @default(0)
+  watk                   Int      @default(0)
+  matk                   Int      @default(0)
+  wdef                   Int      @default(0)
+  mdef                   Int      @default(0)
+  acc                    Int      @default(0)
+  avoid                  Int      @default(0)
+  hands                  Int      @default(0)
+  speed                  Int      @default(0)
+  jump                   Int      @default(0)
+  ViciousHammer          Int      @default(0) @db.TinyInt
+  itemEXP                Int      @default(0)
+  durability             Int      @default(-1)
+  enhance                Int      @default(0) @db.TinyInt
+  potential1             Int      @default(0)
+  potential2             Int      @default(0)
+  potential3             Int      @default(0)
+  hpR                    Int      @default(0) @db.SmallInt
+  mpR                    Int      @default(0) @db.SmallInt
+  incSkill               Int      @default(-1)
+  charmEXP               Int      @default(-1) @db.SmallInt
+  pvpDamage              Int      @default(0) @db.SmallInt
+  dueyitem               Dueyitem @relation(fields: [inventory_item_id], references: [inventory_item_id], onDelete: Cascade, onUpdate: Restrict, map: "dueyequipment_ibfk_1")
+
+  @@index([inventory_item_id], map: "inventory_item_id")
+}
+
+model Dueyitem {
+  inventory_item_id BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  character_id      Int?            @db.UnsignedInt
+  account_id        Int?
+  package_id        Int?
+  itemid            Int             @default(0)
+  inventory_type    Int             @default(0)
+  position          Int             @default(0)
+  quantity          Int             @default(0)
+  owner             String?         @db.TinyText
+  GM_Log            String?         @db.TinyText
+  uniqueid          Int             @default(-1)
+  flag              Int             @default(0)
+  expiredate        BigInt          @default(-1)
+  type              Boolean         @default(false)
+  sender            String          @default("") @db.VarChar(13)
+  marriageId        Int             @default(0)
+  dueyequipment     Dueyequipment[]
+
+  @@index([account_id], map: "account_id")
+  @@index([character_id], map: "character_id")
+  @@index([character_id, inventory_type], map: "characterid__2")
+  @@index([character_id], map: "inventoryitem_ibfk_1")
+  @@index([inventory_type], map: "inventory_type")
+  @@index([package_id], map: "package_id")
+}
+
+model Dueypackage {
+  package_id Int      @id @default(autoincrement()) @db.UnsignedInt
+  recieverId Int
+  senderName String   @db.VarChar(13)
+  meso       Int?     @default(0) @db.UnsignedInt
+  content    String   @default("") @db.VarChar(200)
+  quick      Boolean
+  timestamp  BigInt?  @db.UnsignedBigInt
+  checked    Boolean? @default(true)
+  type       Boolean
+}
+
+model Extendedslot {
+  id           Int @id @default(autoincrement())
+  character_id Int @default(0) @db.UnsignedInt
+  itemId       Int @default(0)
+}
+
+model Famelog {
+  famelogid      Int       @id @default(autoincrement())
+  character_id   Int       @default(0) @db.UnsignedInt
+  characterid_to Int       @default(0)
+  when           DateTime  @default(now()) @db.Timestamp(0)
+  character      Character @relation(fields: [character_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "famelog_ibfk_1")
+
+  @@index([character_id], map: "character_id")
+}
+
+model Familiar {
+  id           Int     @id @default(autoincrement()) @db.UnsignedInt
+  character_id Int     @default(0) @db.UnsignedInt
+  familiar     Int     @default(0)
+  name         String  @default("") @db.VarChar(40)
+  fatigue      Int     @default(0)
+  expiry       BigInt  @default(0)
+  vitality     Boolean @default(false)
+}
+
+model Family {
+  family_id Int    @id @default(autoincrement())
+  leader_id Int    @default(0)
+  notice    String @default("") @db.VarChar(255)
+
+  @@index([family_id], map: "family_id")
+  @@index([leader_id], map: "leader_id")
+}
+
+model Gift {
+  gift_id   Int    @id @default(autoincrement()) @db.UnsignedInt
+  recipient Int    @default(0)
+  from      String @default("") @db.VarChar(13)
+  message   String @default("") @db.VarChar(255)
+  sn        Int    @default(0)
+  uniqueid  Int    @default(0)
+
+  @@index([recipient], map: "recipient")
+}
+
+model Gmlog {
+  gmlogid Int      @id @default(autoincrement())
+  cid     Int      @default(0)
+  command String   @db.Text
+  mapid   Int      @default(0)
+  time    DateTime @default(now()) @db.Timestamp(0)
+}
+
+model Guild {
+  guildid     Int     @id @default(autoincrement()) @db.UnsignedInt
+  leader      Int     @default(0) @db.UnsignedInt
+  GP          Int     @default(0)
+  logo        Int?    @db.UnsignedInt
+  logoColor   Int     @default(0) @db.UnsignedSmallInt
+  name        String  @unique(map: "name") @db.VarChar(45)
+  rank1title  String  @default("마스터") @db.VarChar(45)
+  rank2title  String  @default("부마스터") @db.VarChar(45)
+  rank3title  String  @default("길드원") @db.VarChar(45)
+  rank4title  String  @default("길드원") @db.VarChar(45)
+  rank5title  String  @default("길드원") @db.VarChar(45)
+  capacity    Int     @default(10) @db.UnsignedInt
+  logoBG      Int?    @db.UnsignedInt
+  logoBGColor Int     @default(0) @db.UnsignedSmallInt
+  notice      String? @db.VarChar(101)
+  signature   Int     @default(0)
+  alliance    Int     @default(0) @db.UnsignedInt
+
+  @@index([guildid], map: "guildid")
+  @@index([leader], map: "leader")
+}
+
+model GuildSkill {
+  id        Int    @id @default(autoincrement())
+  guildid   Int    @default(0)
+  skillid   Int    @default(0)
+  level     Int    @default(1) @db.SmallInt
+  timestamp BigInt @default(0)
+  purchaser String @default("") @db.VarChar(13)
+}
+
+model Hiredmerch {
+  package_id   Int     @id @default(autoincrement()) @db.UnsignedInt
+  character_id Int?    @default(0) @db.UnsignedInt
+  account_id   Int?    @db.UnsignedInt
+  meso         Int?    @default(0) @db.UnsignedInt
+  time         BigInt? @db.UnsignedBigInt
+}
+
+model Hiredmerchequipment {
+  inventory_equipment_id BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  inventory_item_id      BigInt         @default(0) @db.UnsignedBigInt
+  upgradeslots           Int            @default(0)
+  level                  Int            @default(0)
+  str                    Int            @default(0)
+  dex                    Int            @default(0)
+  int                    Int            @default(0)
+  luk                    Int            @default(0)
+  hp                     Int            @default(0)
+  mp                     Int            @default(0)
+  watk                   Int            @default(0)
+  matk                   Int            @default(0)
+  wdef                   Int            @default(0)
+  mdef                   Int            @default(0)
+  acc                    Int            @default(0)
+  avoid                  Int            @default(0)
+  hands                  Int            @default(0)
+  speed                  Int            @default(0)
+  jump                   Int            @default(0)
+  ViciousHammer          Int            @default(0) @db.TinyInt
+  itemEXP                Int            @default(0)
+  durability             Int            @default(-1)
+  enhance                Int            @default(0) @db.TinyInt
+  potential1             Int            @default(0)
+  potential2             Int            @default(0)
+  potential3             Int            @default(0)
+  hpR                    Int            @default(0) @db.SmallInt
+  mpR                    Int            @default(0) @db.SmallInt
+  incSkill               Int            @default(-1)
+  charmEXP               Int            @default(-1) @db.SmallInt
+  pvpDamage              Int            @default(0) @db.SmallInt
+  hiredmerchitem         Hiredmerchitem @relation(fields: [inventory_item_id], references: [inventory_item_id], onDelete: Cascade, onUpdate: Restrict, map: "hiredmerchequipment_ibfk_1")
+
+  @@index([inventory_item_id], map: "inventory_item_id")
+}
+
+model Hiredmerchitem {
+  inventory_item_id   BigInt                @id @default(autoincrement()) @db.UnsignedBigInt
+  character_id        Int?                  @db.UnsignedInt
+  account_id          Int?
+  package_id          Int?
+  itemid              Int                   @default(0)
+  inventory_type      Int                   @default(0)
+  position            Int                   @default(0)
+  quantity            Int                   @default(0)
+  owner               String?               @db.TinyText
+  GM_Log              String?               @db.TinyText
+  uniqueid            Int                   @default(-1)
+  flag                Int                   @default(0)
+  expiredate          BigInt                @default(-1)
+  type                Boolean               @default(false)
+  sender              String                @default("") @db.VarChar(13)
+  marriageId          Int                   @default(0)
+  hiredmerchequipment Hiredmerchequipment[]
+
+  @@index([account_id], map: "account_id")
+  @@index([character_id], map: "character_id")
+  @@index([character_id, inventory_type], map: "characterid__2")
+  @@index([character_id], map: "inventoryitem_ibfk_1")
+  @@index([inventory_type], map: "inventory_type")
+  @@index([package_id], map: "package_id")
+}
+
+model Hyperrocklocation {
+  trockid      Int  @id @default(autoincrement())
+  character_id Int? @db.UnsignedInt
+  mapid        Int?
+}
+
+model Imps {
+  impid        Int @id @default(autoincrement()) @db.UnsignedInt
+  character_id Int @default(0) @db.UnsignedInt
+  itemid       Int @default(0)
+  level        Int @default(1) @db.UnsignedTinyInt
+  state        Int @default(1) @db.UnsignedTinyInt
+  closeness    Int @default(0) @db.UnsignedMediumInt
+  fullness     Int @default(0) @db.UnsignedMediumInt
+
+  @@index([impid], map: "impid")
+}
+
+model Internlog {
+  gmlogid Int      @id @default(autoincrement())
+  cid     Int      @default(0)
+  command String   @db.TinyText
+  mapid   Int      @default(0)
+  time    DateTime @default(now()) @db.Timestamp(0)
+}
+
+model InventoryEquipment {
+  id               BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  // DB용 고유 번호 (auto increment)
+  inventoryitem    InventoryItem @relation(fields: [inventoryItem_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "inventoryequipment_ibfk_1")
+  inventoryItem_id BigInt        @unique @default(0) @db.UnsignedBigInt
+  // Item id(auto increment)를 참조하는 필드
+  upgradeslots     Int           @default(0) @db.UnsignedTinyInt
+  level            Int           @default(0) @db.UnsignedTinyInt
+  str              Int           @default(0) @db.SmallInt
+  dex              Int           @default(0) @db.SmallInt
+  int              Int           @default(0) @db.SmallInt
+  luk              Int           @default(0) @db.SmallInt
+  hp               Int           @default(0) @db.SmallInt
+  mp               Int           @default(0) @db.SmallInt
+  watk             Int           @default(0) @db.SmallInt
+  matk             Int           @default(0) @db.SmallInt
+  wdef             Int           @default(0) @db.SmallInt
+  mdef             Int           @default(0) @db.SmallInt
+  acc              Int           @default(0) @db.SmallInt
+  avoid            Int           @default(0) @db.SmallInt
+  hands            Int           @default(0) @db.SmallInt
+  speed            Int           @default(0) @db.SmallInt
+  jump             Int           @default(0) @db.SmallInt
+  ViciousHammer    Int           @default(0) @db.TinyInt
+  itemEXP          Int           @default(0)
+  durability       Int           @default(-1) @db.MediumInt
+  enhance          Int           @default(0) @db.TinyInt
+  potential1       Int           @default(0)
+  potential2       Int           @default(0)
+  potential3       Int           @default(0)
+  hpR              Int           @default(0) @db.SmallInt
+  mpR              Int           @default(0) @db.SmallInt
+  incSkill         Int           @default(-1)
+  charmEXP         Int           @default(-1) @db.SmallInt
+  pvpDamage        Int           @default(0) @db.SmallInt
+
+  @@index([inventoryItem_id], map: "inventory_item_id")
 }
 
 model InventoryItem {
-  id             Int        @id @default(autoincrement()) @db.UnsignedInt
-  character      Character? @relation(fields: [character_id], references: [id], onDelete: Cascade)
-  character_id   Int?       @db.UnsignedInt
-  account        Account?   @relation(fields: [account_id], references: [id])
-  account_id     Int?       @db.UnsignedInt
-  item_id        Int        @default(0) @db.Int
-  inventory_type Int        @default(0) @db.Int
-  position       Int        @default(0) @db.Int
-  quantity       Int        @default(0) @db.Int
-  type           Int        @db.TinyInt
+  id                  BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
+  // DB용 고유 번호 (auto increment)
+  character           Character?          @relation(fields: [character_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  character_id        Int?                @db.UnsignedInt
+  account_id          Int?
+  package_id          Int?
+  itemCode            Int                 @default(0)
+  // 실제 아이템의 ID (wz의 아이템 번호 4000019, 뭐 이런거)
+  inventory_type      Int                 @default(0)
+  position            Int                 @default(0)
+  quantity            Int                 @default(0)
+  owner               String?             @db.TinyText
+  GM_Log              String?             @db.TinyText
+  uniqueid            Int                 @default(-1)
+  flag                Int                 @default(0)
+  expiredate          BigInt              @default(-1)
+  type                Int                 @default(0)
+  sender              String              @default("") @db.VarChar(13)
+  marriageId          Int                 @default(0)
+  inventory_equipment InventoryEquipment?
+
+  @@index([account_id], map: "account_id")
+  @@index([character_id, inventory_type], map: "characterid__2")
+  @@index([inventory_type], map: "inventory_type")
+  @@index([package_id], map: "package_id")
+}
+
+model Inventorylog {
+  inventorylogid    Int    @id @default(autoincrement()) @db.UnsignedInt
+  inventory_item_id Int    @default(0) @db.UnsignedInt
+  msg               String @db.TinyText
+
+  @@index([inventory_item_id], map: "inventory_item_id")
 }
 
 model InventorySlot {
   id           Int        @id @default(autoincrement()) @db.UnsignedInt
+  character    Character? @relation(fields: [character_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  character_id Int?       @unique @db.UnsignedInt
   equip        Int?       @db.UnsignedTinyInt
   use          Int?       @db.UnsignedTinyInt
   setup        Int?       @db.UnsignedTinyInt
   etc          Int?       @db.UnsignedTinyInt
   cash         Int?       @db.UnsignedTinyInt
-  character    Character? @relation(fields: [character_id], references: [id], onDelete: Cascade)
-  character_id Int?       @unique @db.UnsignedInt
+
+  @@index([id], map: "id")
+}
+
+model Ipbans {
+  ipbanid Int    @id @default(autoincrement()) @db.UnsignedInt
+  ip      String @default("") @db.VarChar(40)
+}
+
+model Iplog {
+  id     BigInt @id @default(autoincrement())
+  acc_id Int
+  ip     String @db.VarChar(45)
+  time   String @db.VarChar(45)
+}
+
+model Ipvotelog {
+  vid       Int     @id @default(autoincrement()) @db.UnsignedInt
+  acc_id    Int     @default(0)
+  ipaddress String  @default("127.0.0.1") @db.VarChar(30)
+  votetime  BigInt  @default(0)
+  votetype  Boolean @default(false)
+}
+
+model Keymap {
+  id           Int       @id @default(autoincrement())
+  character_id Int       @default(0) @db.UnsignedInt
+  key          Int       @default(0) @db.UnsignedTinyInt
+  type         Int       @default(0) @db.UnsignedTinyInt
+  action       Int       @default(0)
+  character    Character @relation(fields: [character_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "keymap_ibfk_1")
+
+  @@index([character_id], map: "keymap_ibfk_1")
+}
+
+model Log_chat {
+  id       Int      @id @default(autoincrement())
+  type     Int
+  cid      Int
+  charname String   @db.VarChar(20)
+  message  String   @db.VarChar(200)
+  etc      String   @db.VarChar(400)
+  time     DateTime @default(now()) @db.Timestamp(0)
+}
+
+model Log_item {
+  id       Int      @id @default(autoincrement())
+  cid      Int
+  name     String   @db.VarChar(20)
+  type     Int
+  itemid   Int
+  quantity Int
+  itemname String   @db.VarChar(100)
+  meso     Int
+  etc      String   @db.VarChar(200)
+  time     DateTime @default(now()) @db.Timestamp(0)
+}
+
+model Log_trade {
+  id          Int      @id @default(autoincrement())
+  cid         Int
+  name        String   @db.VarChar(20)
+  type        Int
+  partnername String   @db.VarChar(20)
+  item        String   @db.VarChar(200)
+  etc         String   @db.VarChar(200)
+  time        DateTime @default(now()) @db.Timestamp(0)
+}
+
+model Macbans {
+  macbanid Int    @id @default(autoincrement()) @db.UnsignedInt
+  mac      String @unique(map: "mac_2") @db.VarChar(30)
+}
+
+model Macfilters {
+  macfilterid Int    @id @default(autoincrement()) @db.UnsignedInt
+  filter      String @db.VarChar(30)
+}
+
+model Medalranks {
+  id    Int    @id @default(autoincrement())
+  type  String @db.VarChar(30)
+  name  String @db.VarChar(30)
+  score Int
+}
+
+model Monsterbook {
+  id     Int  @id @default(autoincrement())
+  charid Int  @default(0) @db.UnsignedInt
+  cardid Int  @default(0) @db.UnsignedInt
+  level  Int? @default(1) @db.UnsignedTinyInt
+
+  @@index([charid], map: "charid")
+  @@index([id], map: "id")
+}
+
+model Mountdata {
+  id           Int  @id @default(autoincrement()) @db.UnsignedInt
+  character_id Int? @unique(map: "character_id") @db.UnsignedInt
+  Level        Int  @default(0) @db.UnsignedInt
+  Exp          Int  @default(0) @db.UnsignedInt
+  Fatigue      Int  @default(0)
+
+  @@index([id], map: "id")
+}
+
+model Mts_cart {
+  id           Int @id @default(autoincrement()) @db.UnsignedInt
+  character_id Int @default(0) @db.UnsignedInt
+  itemid       Int @default(0)
+
+  @@index([character_id], map: "character_id")
+  @@index([id], map: "id")
+}
+
+model Mts_items {
+  id           Int     @id
+  tab          Boolean @default(true)
+  price        Int     @default(0)
+  character_id Int     @default(0) @db.UnsignedInt
+  seller       String  @default("") @db.VarChar(13)
+  expiration   BigInt  @default(0)
+}
+
+model Mtsequipment {
+  inventory_equipment_id BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  inventory_item_id      BigInt  @default(0) @db.UnsignedBigInt
+  upgradeslots           Int     @default(0)
+  level                  Int     @default(0)
+  str                    Int     @default(0)
+  dex                    Int     @default(0)
+  int                    Int     @default(0)
+  luk                    Int     @default(0)
+  hp                     Int     @default(0)
+  mp                     Int     @default(0)
+  watk                   Int     @default(0)
+  matk                   Int     @default(0)
+  wdef                   Int     @default(0)
+  mdef                   Int     @default(0)
+  acc                    Int     @default(0)
+  avoid                  Int     @default(0)
+  hands                  Int     @default(0)
+  speed                  Int     @default(0)
+  jump                   Int     @default(0)
+  ViciousHammer          Int     @default(0) @db.TinyInt
+  itemEXP                Int     @default(0)
+  durability             Int     @default(-1)
+  enhance                Int     @default(0) @db.TinyInt
+  potential1             Int     @default(0)
+  potential2             Int     @default(0)
+  potential3             Int     @default(0)
+  hpR                    Int     @default(0) @db.SmallInt
+  mpR                    Int     @default(0) @db.SmallInt
+  incSkill               Int     @default(-1)
+  charmEXP               Int     @default(-1) @db.SmallInt
+  pvpDamage              Int     @default(0) @db.SmallInt
+  mtsitem                MtsItem @relation(fields: [inventory_item_id], references: [inventory_item_id], onDelete: Cascade, onUpdate: Restrict, map: "mtsequipment_ibfk_1")
+
+  @@index([inventory_item_id], map: "inventory_item_id")
+}
+
+model MtsItem {
+  inventory_item_id BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  character_id      Int?           @db.UnsignedInt
+  account_id        Int?
+  package_id        Int?
+  itemid            Int            @default(0)
+  inventory_type    Int            @default(0)
+  position          Int            @default(0)
+  quantity          Int            @default(0)
+  owner             String?        @db.TinyText
+  GM_Log            String?        @db.TinyText
+  uniqueid          Int            @default(-1)
+  flag              Int            @default(0)
+  expiredate        BigInt         @default(-1)
+  type              Boolean        @default(false)
+  sender            String         @default("") @db.VarChar(13)
+  marriageId        Int            @default(0)
+  mtsequipment      Mtsequipment[]
+
+  @@index([account_id], map: "account_id")
+  @@index([character_id], map: "character_id")
+  @@index([character_id, inventory_type], map: "characterid__2")
+  @@index([character_id], map: "inventoryitem_ibfk_1")
+  @@index([inventory_type], map: "inventory_type")
+  @@index([package_id], map: "package_id")
+}
+
+model Mtstransfer {
+  inventory_item_id    BigInt                 @id @default(autoincrement()) @db.UnsignedBigInt
+  character_id         Int?                   @db.UnsignedInt
+  account_id           Int?
+  package_id           Int?
+  itemid               Int                    @default(0)
+  inventory_type       Int                    @default(0)
+  position             Int                    @default(0)
+  quantity             Int                    @default(0)
+  owner                String?                @db.TinyText
+  GM_Log               String?                @db.TinyText
+  uniqueid             Int                    @default(-1)
+  flag                 Int                    @default(0)
+  expiredate           BigInt                 @default(-1)
+  type                 Boolean                @default(false)
+  sender               String                 @default("") @db.VarChar(13)
+  mtstransferequipment Mtstransferequipment[]
+
+  @@index([account_id], map: "account_id")
+  @@index([character_id], map: "character_id")
+  @@index([character_id, inventory_type], map: "characterid__2")
+  @@index([character_id], map: "inventoryitem_ibfk_1")
+  @@index([inventory_type], map: "inventory_type")
+  @@index([package_id], map: "package_id")
+}
+
+model Mtstransferequipment {
+  inventory_equipment_id BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
+  inventory_item_id      BigInt      @default(0) @db.UnsignedBigInt
+  upgradeslots           Int         @default(0)
+  level                  Int         @default(0)
+  str                    Int         @default(0)
+  dex                    Int         @default(0)
+  int                    Int         @default(0)
+  luk                    Int         @default(0)
+  hp                     Int         @default(0)
+  mp                     Int         @default(0)
+  watk                   Int         @default(0)
+  matk                   Int         @default(0)
+  wdef                   Int         @default(0)
+  mdef                   Int         @default(0)
+  acc                    Int         @default(0)
+  avoid                  Int         @default(0)
+  hands                  Int         @default(0)
+  speed                  Int         @default(0)
+  jump                   Int         @default(0)
+  ViciousHammer          Int         @default(0) @db.TinyInt
+  itemEXP                Int         @default(0)
+  durability             Int         @default(-1)
+  enhance                Int         @default(0) @db.TinyInt
+  potential1             Int         @default(0)
+  potential2             Int         @default(0)
+  potential3             Int         @default(0)
+  hpR                    Int         @default(0) @db.SmallInt
+  mpR                    Int         @default(0) @db.SmallInt
+  incSkill               Int         @default(-1)
+  charmEXP               Int         @default(-1) @db.SmallInt
+  pvpDamage              Int         @default(0) @db.SmallInt
+  mtstransfer            Mtstransfer @relation(fields: [inventory_item_id], references: [inventory_item_id], onDelete: Cascade, onUpdate: Restrict, map: "mtstransferequipment_ibfk_1")
+
+  @@index([inventory_item_id], map: "inventory_item_id")
+}
+
+model Notes {
+  id        Int     @id @default(autoincrement())
+  to        String  @default("") @db.VarChar(13)
+  from      String  @default("") @db.VarChar(13)
+  message   String  @db.Text
+  timestamp BigInt  @db.UnsignedBigInt
+  gift      Boolean @default(false)
+
+  @@index([to], map: "to")
+}
+
+model Nxcode {
+  code  String  @id @db.VarChar(15)
+  valid Int     @default(1)
+  user  String? @db.VarChar(13)
+  type  Int     @default(0)
+  item  Int     @default(10000)
+}
+
+model Pets {
+  petid     Int     @id @default(autoincrement()) @db.UnsignedInt
+  name      String? @db.VarChar(13)
+  level     Int     @db.UnsignedInt
+  closeness Int     @db.UnsignedInt
+  fullness  Int     @db.UnsignedInt
+  seconds   Int     @default(0)
+  flags     Int     @default(0) @db.SmallInt
+
+  @@index([petid], map: "petid")
+}
+
+// model Playernpcs {
+//   id               Int                @id @default(autoincrement())
+//   name             String             @db.VarChar(13)
+//   hair             Int
+//   face             Int
+//   skin             Int
+//   x                Int                @default(0)
+//   y                Int                @default(0)
+//   map              Int
+//   charid           Int
+//   scriptid         Int
+//   foothold         Int
+//   dir              Boolean            @default(false)
+//   gender           Boolean            @default(false)
+//   pets             String?            @default("0,0,0") @db.VarChar(25)
+//   character        Character          @relation(fields: [charid], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "playernpcs_ibfk_1")
+//   playernpcs_equip playernpcs_equip[]
+
+//   @@index([charid], map: "playernpcs_ibfk_1")
+//   @@index([scriptid], map: "scriptid")
+// }
+
+// model Playernpcs_equip {
+//   id         Int        @id @default(autoincrement())
+//   npcid      Int
+//   equipid    Int
+//   equippos   Int
+//   charid     Int
+//   character  Character  @relation(fields: [charid], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "playernpcs_equip_ibfk_1")
+//   playernpcs playernpcs @relation(fields: [npcid], references: [scriptid], onDelete: Cascade, onUpdate: Restrict, map: "playernpcs_equip_ibfk_2")
+
+//   @@index([charid], map: "playernpcs_equip_ibfk_1")
+//   @@index([npcid], map: "playernpcs_equip_ibfk_2")
+// }
+
+model Pokemon {
+  id           Int     @id @default(autoincrement())
+  monsterid    Int     @default(0)
+  character_id Int     @default(0) @db.UnsignedInt
+  level        Int     @default(1) @db.SmallInt
+  exp          Int     @default(0)
+  name         String  @default("") @db.VarChar(255)
+  nature       Int     @default(0) @db.TinyInt
+  active       Boolean @default(false)
+  account_id   Int     @default(0)
+  itemid       Int     @default(0)
+  gender       Int     @default(-1) @db.TinyInt
+  hpiv         Int     @default(-1) @db.TinyInt
+  atkiv        Int     @default(-1) @db.TinyInt
+  defiv        Int     @default(-1) @db.TinyInt
+  spatkiv      Int     @default(-1) @db.TinyInt
+  spdefiv      Int     @default(-1) @db.TinyInt
+  speediv      Int     @default(-1) @db.TinyInt
+  evaiv        Int     @default(-1) @db.TinyInt
+  acciv        Int     @default(-1) @db.TinyInt
+  ability      Int     @default(-1) @db.TinyInt
+
+  @@index([character_id], map: "character_id")
+  @@index([id], map: "id")
+}
+
+model Pwreset {
+  id         Int     @id @default(autoincrement()) @db.UnsignedInt
+  name       String  @db.VarChar(14)
+  email      String  @db.VarChar(100)
+  confirmkey String  @db.VarChar(100)
+  status     Boolean @default(false)
+  timestamp  String  @db.VarChar(100)
+}
+
+model Questinfo {
+  questinfoid  Int       @id @default(autoincrement()) @db.UnsignedInt
+  character_id Int       @default(0) @db.UnsignedInt
+  quest        Int       @default(0)
+  customData   String?   @db.VarChar(555)
+  character    Character @relation(fields: [character_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "questsinfo_ibfk_1")
+
+  @@index([character_id], map: "character_id")
+}
+
+model Queststatus {
+  queststatusid   Int               @id @default(autoincrement()) @db.UnsignedInt
+  character_id    Int               @default(0) @db.UnsignedInt
+  quest           Int               @default(0)
+  status          Int               @default(0) @db.TinyInt
+  time            Int               @default(0)
+  forfeited       Int               @default(0)
+  customData      String?           @db.VarChar(255)
+  character       Character         @relation(fields: [character_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "queststatus_ibfk_1")
+  queststatusmobs Queststatusmobs[]
+
+  @@index([character_id], map: "character_id")
+  @@index([queststatusid], map: "queststatusid")
+}
+
+model Queststatusmobs {
+  queststatusmobid Int         @id @default(autoincrement()) @db.UnsignedInt
+  queststatusid    Int         @default(0) @db.UnsignedInt
+  mob              Int         @default(0)
+  count            Int         @default(0)
+  queststatus      Queststatus @relation(fields: [queststatusid], references: [queststatusid], onDelete: Cascade, onUpdate: Restrict, map: "queststatusmobs_ibfk_1")
+
+  @@index([queststatusid], map: "queststatusid")
+}
+
+model Reactordrops {
+  reactordropid Int @id @default(autoincrement()) @db.UnsignedInt
+  reactorid     Int
+  itemid        Int
+  chance        Int
+  questid       Int @default(-1)
+  min           Int @default(0)
+  max           Int @default(0)
+
+  @@index([reactorid], map: "reactorid")
+}
+
+model Redopassword {
+  id       Int      @id @default(autoincrement())
+  email    String   @db.VarChar(100)
+  authcode String   @db.VarChar(12)
+  status   Int
+  time     DateTime @default(now()) @db.Timestamp(0)
+}
+
+model Regrocklocations {
+  trockid      Int  @id @default(autoincrement())
+  character_id Int? @db.UnsignedInt
+  mapid        Int?
+
+  @@index([character_id], map: "character_id")
+}
+
+model Reports {
+  reportid     Int @default(autoincrement())
+  character_id Int @default(0) @db.UnsignedInt
+  type         Int @default(0) @db.TinyInt
+  count        Int @default(0)
+
+  @@id([reportid, character_id])
+  @@index([character_id], map: "character_id")
+}
+
+model Rings {
+  ringid        Int    @id @default(autoincrement())
+  partnerRingId Int    @default(0)
+  partnerChrId  Int    @default(0)
+  itemid        Int    @default(0)
+  partnername   String @db.VarChar(255)
+
+  @@index([partnerChrId], map: "partnerChrId")
+  @@index([partnerRingId], map: "partnerRingId")
+  @@index([ringid], map: "ringid")
+}
+
+model Savedlocations {
+  id           Int       @id @default(autoincrement())
+  character_id Int       @db.UnsignedInt
+  locationtype Int       @default(0)
+  map          Int
+  character    Character @relation(fields: [character_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "savedlocations_ibfk_1")
+
+  @@index([character_id], map: "savedlocations_ibfk_1")
+}
+
+model Scroll_log {
+  id              Int     @id @default(autoincrement())
+  acc_Id          Int     @default(0)
+  chrId           Int     @default(0)
+  scrollId        Int     @default(0)
+  itemId          Int     @default(0)
+  oldSlots        Int     @default(0) @db.TinyInt
+  newSlots        Int     @default(0) @db.TinyInt
+  hammer          Int     @default(0) @db.TinyInt
+  result          String  @default("") @db.VarChar(13)
+  whiteScroll     Boolean @default(false)
+  legendarySpirit Boolean @default(false)
+  vegaId          Int     @default(0)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by the Prisma Client.
+model Sdfsd {
+  das Int
+
+  @@ignore
+}
+
+model Shopitems {
+  shopitemid Int @id @default(autoincrement()) @db.UnsignedInt
+  shopid     Int @default(0) @db.UnsignedInt
+  itemid     Int @default(0)
+  price      Int @default(0)
+  position   Int @default(0)
+  reqitem    Int @default(0)
+  reqitemq   Int @default(0)
+  rank       Int @default(0) @db.TinyInt
+
+  @@index([shopid], map: "shopid")
+}
+
+model Shopranks {
+  id     Int    @id @default(autoincrement())
+  shopid Int    @default(0)
+  rank   Int    @default(0)
+  name   String @default("") @db.VarChar(255)
+  itemid Int    @default(0)
+}
+
+model Shops {
+  shopid Int  @id @default(autoincrement()) @db.UnsignedInt
+  npcid  Int? @default(0)
+}
+
+model Sidekicks {
+  id       Int @id @default(autoincrement()) @db.UnsignedInt
+  firstid  Int @default(0)
+  secondid Int @default(0)
+}
+
+model Skillmacros {
+  id           Int     @id @default(autoincrement())
+  character_id Int     @default(0) @db.UnsignedInt
+  position     Boolean @default(false)
+  skill1       Int     @default(0)
+  skill2       Int     @default(0)
+  skill3       Int     @default(0)
+  name         String? @db.VarChar(30)
+  shout        Boolean @default(false)
+
+  @@index([character_id], map: "character_id")
+}
+
+model Skills {
+  id           Int       @id @default(autoincrement())
+  skillid      Int       @default(0)
+  character_id Int       @default(0) @db.UnsignedInt
+  skilllevel   Int       @default(0)
+  masterlevel  Int       @default(0) @db.TinyInt
+  expiration   BigInt    @default(-1)
+  character    Character @relation(fields: [character_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "skills_ibfk_1")
+
+  @@index([character_id], map: "skills_ibfk_1")
+}
+
+model Skills_cooldowns {
+  id        Int    @id @default(autoincrement())
+  charid    Int
+  SkillID   Int
+  length    BigInt
+  StartTime BigInt @db.UnsignedBigInt
+
+  @@index([charid], map: "charid")
+}
+
+model Speedruns {
+  id         Int    @id @default(autoincrement()) @db.UnsignedInt
+  type       String @db.VarChar(13)
+  leader     String @db.VarChar(13)
+  timestring String @db.VarChar(1024)
+  time       BigInt @default(0)
+  members    String @default("") @db.VarChar(1024)
+}
+
+model Storage {
+  storageid  Int     @id @default(autoincrement()) @db.UnsignedInt
+  account_id Int     @default(0)
+  slots      Int     @default(0)
+  meso       Int     @default(0)
+  account    Account @relation(fields: [account_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "storage_ibfk_1")
+
+  @@index([account_id], map: "account_id")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by the Prisma Client.
+model Test5 {
+  sdfds Int
+
+  @@ignore
+}
+
+model Tournamentlog {
+  logid          Int      @id @default(autoincrement())
+  winnerid       Int      @default(0)
+  numContestants Int      @default(0)
+  when           DateTime @default(now()) @db.Timestamp(0)
+}
+
+model Trocklocations {
+  trockid      Int  @id @default(autoincrement())
+  character_id Int? @db.UnsignedInt
+  mapid        Int?
+
+  @@index([character_id], map: "character_id")
+}
+
+model Wedding_data {
+  id                      Int     @id @db.UnsignedInt
+  groomId                 Int
+  brideId                 Int
+  groomName               String? @db.VarChar(30)
+  brideName               String? @db.VarChar(30)
+  status                  Int     @default(0)
+  weddingStatus           Int
+  ticketType              Int
+  EngagementTime          BigInt
+  MakeReservationTime     BigInt
+  RequestDivorceTimeGroom BigInt
+  RequestDivorceTimeBride BigInt
+
+  @@ignore
+}
+
+model Wedding_reserved {
+  id         Int @id @default(autoincrement())
+  marriageid Int
+  chrid      Int
+
+  @@ignore
+}
+
+model Wedding_wishlists {
+  id         Int     @id @default(autoincrement())
+  marriageid Int
+  gender     Boolean
+  string     String  @db.VarChar(150)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by the Prisma Client.
+model Wishlist {
+  character_id Int
+  sn           Int
+
+  @@index([character_id], map: "character_id")
+  @@ignore
+}
+
+model Wz_itemadddata {
+  id     Int    @id @default(autoincrement())
+  itemid Int
+  key    String @db.VarChar(30)
+  value1 Int    @default(0)
+  value2 Int    @default(0)
+}
+
+model Wz_itemdata {
+  itemid        Int     @id
+  name          String? @db.TinyText
+  msg           String? @db.VarChar(4096)
+  desc          String? @db.VarChar(4096)
+  slotMax       Int     @default(1) @db.SmallInt
+  price         String  @default("-1.0") @db.VarChar(255)
+  wholePrice    Int     @default(-1)
+  stateChange   Int     @default(0)
+  flags         Int     @default(0) @db.SmallInt
+  karma         Boolean @default(false)
+  meso          Int     @default(0)
+  monsterBook   Int     @default(0)
+  itemMakeLevel Int     @default(0) @db.SmallInt
+  questId       Int     @default(0)
+  scrollReqs    String? @db.TinyText
+  consumeItem   String? @db.TinyText
+  totalprob     Int     @default(0)
+  incSkill      String  @default("") @db.VarChar(255)
+  replaceid     Int     @default(0)
+  replacemsg    String  @default("") @db.VarChar(255)
+  create        Int     @default(0)
+  afterImage    String  @default("") @db.VarChar(255)
+}
+
+model Wz_itemequipdata {
+  id        Int    @id @default(autoincrement())
+  itemid    Int
+  itemLevel Int    @default(-1)
+  key       String @db.VarChar(30)
+  value     Int    @default(0)
+}
+
+model Wz_itemrewarddata {
+  id       Int    @id @default(autoincrement())
+  itemid   Int
+  item     Int
+  prob     Int    @default(0)
+  quantity Int    @default(0) @db.SmallInt
+  period   Int    @default(-1)
+  worldMsg String @default("") @db.VarChar(255)
+  effect   String @default("") @db.VarChar(255)
+}
+
+model Wz_mobskilldata {
+  id          Int     @id @default(autoincrement())
+  skillid     Int
+  level       Int
+  hp          Int     @default(100)
+  mpcon       Int     @default(0)
+  x           Int     @default(1)
+  y           Int     @default(1)
+  time        Int     @default(0)
+  prop        Int     @default(100)
+  limit       Int     @default(0)
+  spawneffect Int     @default(0)
+  interval    Int     @default(0)
+  summons     String  @default("") @db.VarChar(1024)
+  ltx         Int     @default(0)
+  lty         Int     @default(0)
+  rbx         Int     @default(0)
+  rby         Int     @default(0)
+  once        Boolean @default(false)
+}
+
+model Wz_oxdata {
+  questionset Int              @default(0) @db.SmallInt
+  questionid  Int              @default(0) @db.SmallInt
+  question    String           @default("") @db.VarChar(200)
+  display     String           @default("") @db.VarChar(200)
+  answer      wz_oxdata_answer
+
+  @@id([questionset, questionid])
+}
+
+model Wz_questactdata {
+  id             Int     @id @default(autoincrement())
+  questid        Int     @default(0)
+  name           String  @default("") @db.VarChar(127)
+  type           Boolean @default(false)
+  intStore       Int     @default(0)
+  stringStore    String? @db.VarChar(30)
+  applicableJobs String  @default("") @db.VarChar(1024)
+  uniqueid       Int     @default(0)
+
+  @@index([questid], map: "quests_ibfk_2")
+}
+
+model Wz_questactitemdata {
+  id       Int @id @default(autoincrement())
+  itemid   Int @default(0)
+  count    Int @default(0) @db.SmallInt
+  period   Int @default(0)
+  gender   Int @default(2) @db.TinyInt
+  job      Int @default(-1)
+  jobEx    Int @default(-1)
+  prop     Int @default(-1)
+  uniqueid Int @default(0)
+}
+
+model Wz_questactquestdata {
+  id       Int @id @default(autoincrement())
+  quest    Int @default(0)
+  state    Int @default(2) @db.TinyInt
+  uniqueid Int @default(0)
+}
+
+model Wz_questactskilldata {
+  id          Int @id @default(autoincrement())
+  skillid     Int @default(0)
+  skillLevel  Int @default(-1)
+  masterLevel Int @default(-1)
+  uniqueid    Int @default(0)
+}
+
+model Wz_questdata {
+  questid         Int     @id
+  name            String  @default("") @db.VarChar(1024)
+  autoStart       Boolean @default(false)
+  autoPreComplete Boolean @default(false)
+  viewMedalItem   Int     @default(0)
+  selectedSkillID Int     @default(0)
+  blocked         Boolean @default(false)
+  autoAccept      Boolean @default(false)
+  autoComplete    Boolean @default(false)
+}
+
+model Wz_questpartydata {
+  id       Int    @id @default(autoincrement())
+  questid  Int    @default(0)
+  rank     String @default("") @db.VarChar(1)
+  mode     String @default("") @db.VarChar(13)
+  property String @default("") @db.VarChar(255)
+  value    Int    @default(0)
+
+  @@index([questid], map: "quests_ibfk_7")
+}
+
+model Wz_questreqdata {
+  id              Int     @id @default(autoincrement())
+  questid         Int     @default(0)
+  name            String  @default("") @db.VarChar(127)
+  type            Boolean @default(false)
+  stringStore     String  @default("") @db.VarChar(1024)
+  intStoresFirst  String  @default("") @db.VarChar(1024)
+  intStoresSecond String  @default("") @db.VarChar(1024)
+
+  @@index([questid], map: "quests_ibfk_1")
+}
+
+enum wz_oxdata_answer {
+  o
+  x
 }

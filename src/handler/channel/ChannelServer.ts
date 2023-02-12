@@ -1,5 +1,5 @@
 import MapleClient from "@/src/client/Client";
-import PacketHandlerManager from "@/src/client/PacketHandler";
+import PacketHandler from "@/src/client/PacketHandler";
 import net from "net";
 
 const ChannelServer = (port: number) => {
@@ -9,16 +9,13 @@ const ChannelServer = (port: number) => {
 	server.on("connection", async (socket) => {
 		const client = new MapleClient(socket, 1);
 
+		// 원본팩의 while() readPacket
 		socket.on("data", async (data) => {
 			const reader = client.getPacketReader(data); //reader : 복호화된 Buffer 가 담긴 reader 객체
 
 			if (reader) {
 				try {
-					const header_num = reader.readShort();
-					const packetHandler = PacketHandlerManager.getHandler(header_num);
-
-					packetHandler(client, reader);
-					console.log(reader.getBuffer());
+					PacketHandler.handlePacket(client, reader);
 				} catch (err) {
 					console.log(err);
 				}

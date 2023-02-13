@@ -1,5 +1,6 @@
 import Item from "@/src/client/inventory/Item";
 import { MapleCharacter } from "@/src/client/MapleCharacter";
+import { InventoryType } from "@/src/constant/Const";
 import LittleEndianPacketWriter from "@/src/packet/tools/NewPacketWriter";
 import lodash from "lodash";
 
@@ -17,6 +18,8 @@ class PacketHelper {
 
 		pm.writeByte(character.level);
 		pm.writeShort(character.job);
+
+		// console.log(character.job);
 
 		pm.writeShort(character.stats.str);
 		pm.writeShort(character.stats.dex);
@@ -48,7 +51,7 @@ class PacketHelper {
 		const myEquip = new Map<number, number>();
 		const maskedEquip = new Map<number, number>();
 
-		const equip = character.getInventory(6);
+		const equip = character.getInventory(InventoryType.EQUIPPED);
 
 		for (const ivItem of equip.getCopiedItemList()) {
 			// console.log(ivItem);

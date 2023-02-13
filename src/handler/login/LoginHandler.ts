@@ -6,8 +6,8 @@ import LoginHelper from "./LoginHelper";
 import { MapleCharacter } from "@/src/client/MapleCharacter";
 import MapleInventory from "@/src/client/inventory/MapleInventory";
 import Item from "@/src/client/inventory/Item";
-import { InvType } from "@/src/client/inventory/InventoryType";
 import ItemInformationProvider from "@/src/server/ItemInformationProvider";
+import { InventoryType } from "@/src/constant/Const";
 
 class LoginHandler {
 	private static loginFailCount(c: MapleClient) {}
@@ -16,7 +16,7 @@ class LoginHandler {
 		// 로그인 여부 확인
 		// if(!client.isLoggedIn()) client.getSession().destroy()
 
-		const jobType = 1; // BigBang 이전 모험가 : 1
+		const jobCode = 0;
 		// const dualblade = 0; // 모험가: 0, 듀블: 1
 		const gender = client.gender; // 나중에 닉네임으로 남녀 만드는것도 가능할듯
 
@@ -43,7 +43,7 @@ class LoginHandler {
 		}
 
 		// character skeleton 을 생성합니다
-		const newChar = await MapleCharacter.getSkeletonForNewChar(client, jobType);
+		const newChar = await MapleCharacter.getSkeletonForNewChar(client, jobCode);
 		newChar.world = client.worldId;
 		newChar.face = face;
 		newChar.hair = hair + hairColor;
@@ -64,7 +64,7 @@ class LoginHandler {
 		// 캐릭터의 인벤토리(장비) 객체를 불러옵니다. (당연히 비어있음)
 		// 이 equip 는 newChar 의 인벤토리를 참조하고 있습니다!!!
 		// 존나게 객체지향적인 방식입니다 사용에 주의가 필요해요
-		const equip: MapleInventory = newChar.getInventory(InvType.EQUIPPED);
+		const equip: MapleInventory = newChar.getInventory(InventoryType.EQUIPPED);
 
 		// Item Code 를 통해 item 객체를 만들어서 인벤토리에 추가합니다
 		// addFromDB() 는 item 객체를 받아 인벤토리에 추가하는 역할을 수행합니다
@@ -91,7 +91,7 @@ class LoginHandler {
 		// 4161001: 초보자 안내서
 		// if (jobType == 1)
 		// 이거 왜 동작을 안하지?
-		newChar.getInventory(InvType.ETC).addItem(new Item(4161001, 0, 1, 0));
+		newChar.getInventory(InventoryType.ETC).addItem(new Item(4161001, 0, 1, 0));
 
 		// 무슨무슨 조건
 		if (true) {
@@ -103,7 +103,7 @@ class LoginHandler {
 			// 생성한 캐릭터 저장
 			// 화스에서는 저장 결과를 기다리지 않는데
 			// 노드에서는 일단 대기하게 해봄
-			MapleCharacter.saveNewCharToDB(newChar, jobType).then(
+			MapleCharacter.saveNewCharToDB(newChar, jobCode).then(
 				() =>
 					// addNewCharEntry 에는 DB 조회를 하지 않는다
 					// 따라서 newChar 를 그냥 패킷에 담아서 보내면 됨
@@ -122,8 +122,6 @@ class LoginHandler {
 	public static async login(client: MapleClient, reader: PacketReader) {
 		const name = reader.readMapleAsciiString();
 		const password = reader.readMapleAsciiString();
-		console.log(name, password);
-		// 아이디로 계정 조회
 
 		const loginOk = await client.login(name, password);
 		if (loginOk != 0) return client.sendPacket(LoginPacket.getLoginFailed(loginOk));
@@ -146,20 +144,19 @@ class LoginHandler {
 	}
 
 	public static async charListRequest(client: MapleClient, reader: PacketReader) {
-		// if client is not logged-in, need to disconnect
-		reader.skip(1);
+		if (!client.loggedIn) client.getSession().destroy();
 
+		reader.skip(1);
 		const worldId = reader.readByte();
 		const channel = reader.readByte() + 1;
-
-		// World ID 를 기준으로 캐릭터 목록을 조회합니다.
-		// 이제 진짜 얘는 다 고침 (스텟 로딩까지 다 만들었음)
 		const chars: Array<MapleCharacter> = await client.loadCharacters(worldId);
+		// console.log("[Check] 조회된 캐릭터 수 : " + chars.length); OK 정상
 
-		// true에 월드 상태체크, ..등등
+		// [임시] true에 월드 상태체크, ..등등
 		if (chars !== null && true) {
 			client.worldId = worldId;
 			client.channel = channel;
+			client.charslots = 6;
 			client.sendPacket(LoginPacket.getCharList(null, chars, client.charslots));
 		} else {
 			client.getSession().destroy();

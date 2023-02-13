@@ -7,7 +7,8 @@ class MaplePacketCreator {
 		const pm = new LittleEndianPacketWriter();
 		pm.writeOpcode(Opcodes.serverOpcodes.SERVER_IP);
 		pm.writeShort(0);
-		if (client.ip.length > 0) {
+		// console.log(client.ip);
+		if (false) {
 			for (const n of client.ip.split(",")) {
 				pm.writeByte(parseInt(n));
 			}

@@ -1,7 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { it } from "node:test";
 import Equip from "./inventory/Equip";
-import { InvType } from "./inventory/InventoryType";
 import Item from "./inventory/Item";
 import ItemLoader from "./inventory/ItemLoader";
 import { MapleCharacter } from "./MapleCharacter";

@@ -26,7 +26,7 @@ class MapleClient {
 	public static LOGIN_LOGGEDIN = 2;
 	public static CHANGE_CHANNEL = 3;
 
-	public static DEFAULT_CHARSLOT = 3;
+	public static DEFAULT_CHARSLOT = 6;
 	public static CLIENT_KEY = "CLIENT";
 
 	private player: MapleCharacter; // 임시
@@ -38,7 +38,7 @@ class MapleClient {
 
 	public charslots = MapleClient.DEFAULT_CHARSLOT;
 
-	private loggedIn: boolean = false;
+	public loggedIn: boolean = false;
 	private serverTransition: boolean = false;
 
 	// private tempban : Calendar = null;
@@ -127,11 +127,7 @@ class MapleClient {
 		}
 
 		try {
-			const account = await prisma.account.findUnique({
-				where: {
-					name,
-				},
-			});
+			const account = await prisma.account.findUnique({ where: { name } });
 			if (!account) loginOk = 5;
 			else {
 				this.accName = account.name;
@@ -182,24 +178,18 @@ class MapleClient {
 
 	/**
 	 * 캐릭터를 조회하여 Array[MapleCharacter] 를 반환합니다
-	 * 반환된 목록은 어디선가 쓰입니다
 	 */
 	public async loadCharacters(worldId: number) {
 		let charSlot: Array<MapleCharacter> = [];
-		/**
-		 * 기본 정보를 조회하고, 이를통해 게임에 필요한 모든 정보를 로딩합니다
-		 * 조회한 데이터를 통해 인게임에 필요한 모든 정보를 담은 MapleCharacter 객체를 생성합니다
-		 * 매우매우매우 중요한 부분
-		 */
 
 		try {
-			// 캐릭터 기본 정보 로딩
+			// 1. 캐릭터가 존재하는지 조회합니다
 			const cl = await this.loadCharactersInternal(worldId);
 
-			// 한방에 조회하도록 개선하기
+			// 2. 조회된 ID를 통해 플레이어의 데이터가 담긴 MapleCharacter 객체를 생성합니다
 			for (const c of cl) {
 				const cb = await MapleCharacter.loadCharFromDB(this, c.id, false);
-				charSlot.push(cb);
+				if (cb !== null) charSlot.push(cb);
 			}
 		} catch (err) {
 			console.log(err);

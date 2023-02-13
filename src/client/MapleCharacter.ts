@@ -4,9 +4,9 @@ import { AnimatedMapleMapObject } from "../server/maps/AnimatedMapleMapObject";
 import MapleClient from "./Client";
 import MapleInventory from "./inventory/MapleInventory";
 import CharacterStats from "./CharacterStats";
-import { InvType } from "./inventory/InventoryType";
 import CharacterHelper from "./CharacterHelper";
-import { Prisma } from "@prisma/client";
+import { InventoryType, ItemLocation } from "../constant/Const";
+import ItemLoader from "./inventory/ItemLoader";
 
 export class MapleCharacter extends AnimatedMapleMapObject {
 	// private static serialVersionUID = 845748950829;
@@ -14,7 +14,7 @@ export class MapleCharacter extends AnimatedMapleMapObject {
 	// 캐릭터 정보
 	public id: number = null;
 	public name: string = null;
-	public job: number = 1;
+	public job: number = 0;
 	public world: number = 0;
 	public gender: number = 0;
 	public mount: any = null;
@@ -77,13 +77,13 @@ export class MapleCharacter extends AnimatedMapleMapObject {
 
 		// 인벤토리를 생성합니다. 아직 데이터가 적재되지 않았습니다
 		this.inventory = [
-			new MapleInventory(InvType.UNDEFINED),
-			new MapleInventory(InvType.EQUIP),
-			new MapleInventory(InvType.USE),
-			new MapleInventory(InvType.SETUP),
-			new MapleInventory(InvType.ETC),
-			new MapleInventory(InvType.CASH),
-			new MapleInventory(InvType.EQUIPPED),
+			new MapleInventory(InventoryType.UNDEFINED),
+			new MapleInventory(InventoryType.EQUIP),
+			new MapleInventory(InventoryType.USE),
+			new MapleInventory(InventoryType.SETUP),
+			new MapleInventory(InventoryType.ETC),
+			new MapleInventory(InventoryType.CASH),
+			new MapleInventory(InventoryType.EQUIPPED),
 		];
 
 		// 퀘스트 초기화
@@ -97,11 +97,11 @@ export class MapleCharacter extends AnimatedMapleMapObject {
 	 * @param client MapleClient Object
 	 * @param jobCode 캐릭터 직업 Code
 	 */
-	public static async getSkeletonForNewChar(client: MapleClient, jobCode: number) {
+	public static async getSkeletonForNewChar(client: MapleClient, jobCode: number = 0) {
 		const skel = new MapleCharacter(false);
 		skel.client = client;
 		skel.accountId = client.accId;
-		skel.job = jobCode;
+		skel.job = jobCode; // 0 초보자
 		skel.stats.str = 12;
 		skel.stats.dex = 5;
 		skel.stats.int = 4;
@@ -125,9 +125,8 @@ export class MapleCharacter extends AnimatedMapleMapObject {
 	 * 캐릭터의 인벤토리를 반환합니다
 	 * @param invType Inventory Type
 	 */
-	public getInventory(invType: number) {
-		if (invType == -1) invType = 6;
-		return this.inventory[invType];
+	public getInventory(invType: InventoryType) {
+		return this.inventory[invType == -1 ? 6 : invType];
 	}
 
 	/**
@@ -139,10 +138,15 @@ export class MapleCharacter extends AnimatedMapleMapObject {
 	public static async loadCharFromDB(client: MapleClient, charId: number, channelServer: boolean = false) {
 		const c: MapleCharacter = new MapleCharacter(channelServer);
 		try {
+			c.id = charId;
+			c.client = client;
+
 			const pchar = await prisma.character.findUnique({
 				where: { id: charId },
-				//include: { inventoryItem: true, inventorySlot: true }, // 보유 아이템, 아이템 슬롯
+				// include: { inventoryItem: true },
 			});
+
+			if (!pchar) return null;
 
 			c.name = pchar.name;
 			c.level = pchar.level;
@@ -174,7 +178,7 @@ export class MapleCharacter extends AnimatedMapleMapObject {
 			c.skin = pchar.skin;
 			c.gender = pchar.gender;
 			c.hair = pchar.hair;
-			c.face = pchar.hair;
+			c.face = pchar.face;
 			c.accountId = pchar.account_id;
 
 			c.map_id = pchar.map;
@@ -200,9 +204,13 @@ export class MapleCharacter extends AnimatedMapleMapObject {
 
 			client.accId = c.accountId; // 얘 갑자기 왜 튀어나옴?
 
-			// 여기서 인벤토리를 한번에 주면 깔끔하지 않나?
-			// char.inventory;
-
+			// DB 로부터 조회한 아이템들을 인벤토리에 넣어줘야함
+			const items = await ItemLoader.loadItems(c.id, ItemLocation.INVENTORY, false);
+			for (const item of [...items.values()]) {
+				c.getInventory(item.invType).addFromDB(item.item);
+				// console.log("[Check] 아이템 : " + item.item.itemCode);
+				// if(item.item.pet !=null) c.pet.add()
+			}
 			return c;
 		} catch (err) {
 			console.log(err);
@@ -217,7 +225,7 @@ export class MapleCharacter extends AnimatedMapleMapObject {
 	 * @param char MapleCharacter Object
 	 * @param jobCode 캐릭터 직업 Code
 	 */
-	public static async saveNewCharToDB(char: MapleCharacter, jobCode: number) {
+	public static async saveNewCharToDB(char: MapleCharacter, jobCode: number = 1) {
 		try {
 			// 저장할 캐릭터 정보 만들어주는 함수
 			const { character: characterWithRest, equip: equips } = CharacterHelper.refineDataFromChar(char, jobCode);
@@ -234,7 +242,7 @@ export class MapleCharacter extends AnimatedMapleMapObject {
 						data: {
 							character: { connect: { id: createdChar.id } },
 							itemCode: item.itemCode,
-							inventory_type: 0,
+							inventory_type: -1, // -1 착용중
 							position: item.position,
 							quantity: item.quantity,
 							owner: "", // [임시]

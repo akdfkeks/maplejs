@@ -667,7 +667,6 @@ model InventoryItem {
   account_id          Int?
   package_id          Int?
   itemCode            Int                 @default(0)
-  // 실제 아이템의 ID (wz의 아이템 번호 4000019, 뭐 이런거)
   inventory_type      Int                 @default(0)
   position            Int                 @default(0)
   quantity            Int                 @default(0)

@@ -153,33 +153,40 @@ class LoginPacket {
 		return pm.getPacket();
 	}
 
+	/**
+	 * 캐릭터 목록을 반환하는 패킷을 생성하는 메서드입니다.
+	 * @param secondPw [임시] 2차 비밀번호 (구현 필요)
+	 * @param characters 캐릭터 목록
+	 * @param charSlot [임시] 캐릭터 슬롯 수 (이걸 캐릭터 수랑 같게 둬도 되나?)
+	 */
 	public static getCharList(secondPw: string, characters: Array<MapleCharacter>, charSlot: number) {
 		const pm = new LittleEndianPacketWriter();
-
-		// console.log("[LOG] 보유 캐릭터 목록");
-		// for (const char of characters) {
-		// 	console.log(char.name);
-		// } OK 조회 잘 됨
 
 		pm.writeOpcode(Opcodes.serverOpcodes.CHARLIST);
 		pm.writeByte(0); // ??
 		pm.writeInt(0); // IDCODE2 ??
 		pm.writeByte(characters.length);
 
-		// 각 캐릭터에 대한 정보를 패킷에 담아야함
-		// 별도의 Handler 에 pm 객체 전달하여
-		// 해당 함수에서 패킷 작성하도록 구현 (little-endian 이라서..)
+		// [추정] 현재 각 캐릭터 객체에는 인벤토리 데이터가 적재되어 있지 않음
+		// 이 코드가 돌기 전에 조회해서 넣어줘야함
+		// 여기는 패킷 만들어주는 함수니까 밖에서 하자
 		for (const char of characters) {
 			this.addCharEntry(pm, char, false);
 		}
 
-		pm.writeByte(2); // 2차 비밀번호 1: 있음, 2: 없음
+		pm.writeByte(secondPw != null && secondPw.length > 0 ? 1 : 2); // 2차 비밀번호 1: 있음, 2: 없음
 		pm.writeByte(0);
-		pm.writeInt(charSlot); // 캐릭터 슬롯?
+		pm.writeInt(charSlot); // 캐릭터 슬롯 수?
 
 		return pm.getPacket();
 	}
 
+	/**
+	 * 패킷에 캐릭터 정보를 작성합니다.
+	 * @param pm PacketWritter Object
+	 * @param char MapleCharater Object
+	 * @param ranking 랭킹 표시 여부
+	 */
 	private static addCharEntry(pm: LittleEndianPacketWriter, char: MapleCharacter, ranking: boolean = false) {
 		// 캐릭터 능력치 패킷 등록
 		PacketHelper.addCharStats(pm, char);

@@ -1,19 +1,19 @@
+import { InventoryType } from "@/src/constant/Const";
 import lodash from "lodash";
-import { InvType } from "./InventoryType";
 import Item from "./Item";
 
-type position = number;
+type Position = number;
 
 class MapleInventory {
 	// 여기서 number 는 아이템의 위치(position)
-	private inventory: Map<position, Item>;
+	private inventory: Map<Position, Item>;
 	private slotLimit = 0;
 	// 0: undefined, 1: equip, 2: use, 3: setup, 4: etc, 5: cash, -1: equipped
-	public invType: number;
+	public invType: InventoryType;
 
-	constructor(invType: number) {
-		this.invType = invType > -2 && invType < 6 ? invType : 0;
-		this.inventory = new Map<number, Item>();
+	constructor(invType: InventoryType) {
+		this.invType = invType;
+		this.inventory = new Map<Position, Item>();
 	}
 
 	public addFromDB(item: Item) {
@@ -25,7 +25,7 @@ class MapleInventory {
 		if (this.slotLimit > 96) this.slotLimit = 96;
 	}
 
-	public getItem(slot: position) {
+	public getItem(slot: Position) {
 		return this.inventory.get(slot);
 	}
 

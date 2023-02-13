@@ -23,6 +23,7 @@ class PacketHandler {
 		this.handler.set("CHARLIST_REQUEST", LoginHandler.charListRequest);
 		this.handler.set("CHECK_CHAR_NAME", LoginHandler.checkCharName);
 		this.handler.set("CREATE_CHAR", LoginHandler.createChar);
+		// 완료
 
 		this.handler.set("CHAR_SELECT", LoginHandler.charSelect);
 		this.handler.set("CHAR_SELECT_WITH_SPW", () => {});

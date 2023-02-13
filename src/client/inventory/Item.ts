@@ -4,7 +4,7 @@ class Item {
 	public quantity: number;
 	public flag: number;
 	public expiration: bigint = BigInt(-1);
-	public inventoryId = 0; // 아이템이 소속된 인벤토리의 고유 ID 로 추청
+	public inventoryId: bigint = BigInt(0); // 아이템이 소속된 인벤토리의 고유 ID 로 추청
 	public pet = null; // 임시
 	public uniqueId: number;
 	public marriageId: number;

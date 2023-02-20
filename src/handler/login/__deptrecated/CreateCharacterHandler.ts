@@ -23,7 +23,7 @@ const CreateCharacterHandler = async (client: MapleClient, reader: PacketReader)
 	const luk = 4;
 
 	// WZ값을 기반으로 성형/헤어 및 아이템값이 유효한지 확인합니다.
-	const makeCharInfo = await getMakeCharInfo(client.gender > 0 ? true : false);
+	const makeCharInfo = await getMakeCharInfo(client._gender > 0 ? true : false);
 	if (
 		!makeCharInfo.face.includes(face) ||
 		!makeCharInfo.hair.includes(hair) ||

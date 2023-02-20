@@ -13,7 +13,7 @@ model Account {
   password        String    @default("") @db.VarChar(128)
   salt            String?   @db.VarChar(32)
   second_password String?   @db.VarChar(134)
-  loggedin        Boolean   @default(false)
+  loggedin        Int       @default(0) @db.TinyInt
   lastlogin       DateTime? @db.Timestamp(0)
   createdat       DateTime  @default(now()) @db.Timestamp(0)
   birthday        DateTime  @default(dbgenerated("('2000-01-01')")) @db.Date

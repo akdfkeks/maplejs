@@ -5,6 +5,7 @@ import PacketReader from "../packet/tools/PacketReader";
 import LoginHandler from "../handler/login/LoginHandler";
 import CharacterSelectHandler from "../handler/login/__deptrecated/CharacterSelectHandler";
 import { read } from "fs";
+import InterServerHandler from "../handler/channel/InterServerHandler";
 
 type Handler = (client: MapleClient, reader?: PacketReader) => void;
 
@@ -28,7 +29,7 @@ class PacketHandler {
 		this.handler.set("CHAR_SELECT", LoginHandler.charSelect);
 		this.handler.set("CHAR_SELECT_WITH_SPW", () => {});
 		this.handler.set("CHANGE_CHANNEL", () => {});
-		this.handler.set("PLAYER_LOGGEDIN", () => {});
+		this.handler.set("PLAYER_LOGGEDIN", InterServerHandler.loggedIn);
 		this.handler.set("ENTER_CASH_SHOP", () => {});
 		this.handler.set("MOVE_PLAYER", () => {});
 		this.handler.set("CHAR_INFO_REQUEST", () => {});

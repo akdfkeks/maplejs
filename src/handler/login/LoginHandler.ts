@@ -18,7 +18,7 @@ class LoginHandler {
 
 		const jobCode = 0;
 		// const dualblade = 0; // 모험가: 0, 듀블: 1
-		const gender = client.gender; // 나중에 닉네임으로 남녀 만드는것도 가능할듯
+		const gender = client.getGender(); // 나중에 닉네임으로 남녀 만드는것도 가능할듯
 
 		// 패킷에서 캐릭터 정보 추출
 		const name = reader.readMapleAsciiString();
@@ -44,7 +44,7 @@ class LoginHandler {
 
 		// character skeleton 을 생성합니다
 		const newChar = await MapleCharacter.getSkeletonForNewChar(client, jobCode);
-		newChar.world = client.worldId;
+		newChar.world = client.getWorld();
 		newChar.face = face;
 		newChar.hair = hair + hairColor;
 		newChar.gender = gender;
@@ -144,7 +144,7 @@ class LoginHandler {
 	}
 
 	public static async charListRequest(client: MapleClient, reader: PacketReader) {
-		if (!client.loggedIn) client.getSession().destroy();
+		if (!client.isLoggedIn()) client.getSession().destroy();
 
 		reader.skip(1);
 		const worldId = reader.readByte();
@@ -154,10 +154,10 @@ class LoginHandler {
 
 		// [임시] true에 월드 상태체크, ..등등
 		if (chars !== null && true) {
-			client.worldId = worldId;
-			client.channel = channel;
-			client.charslots = 6;
-			client.sendPacket(LoginPacket.getCharList(null, chars, client.charslots));
+			client.setWord(worldId);
+			client.setChannel(channel);
+			client.setCharslots(6);
+			client.sendPacket(LoginPacket.getCharList(null, chars, client.getCharslots()));
 		} else {
 			client.getSession().destroy();
 		}

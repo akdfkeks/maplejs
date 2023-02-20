@@ -14,7 +14,7 @@ class CharacterHelper {
 		const character: Prisma.CharacterCreateInput = {
 			name: char.name,
 			account: { connect: { id: char.accountId } },
-			level: 1,
+			level: char.level,
 			str: char.stats.str,
 			dex: char.stats.dex,
 			int: char.stats.int,
@@ -30,7 +30,7 @@ class CharacterHelper {
 			job: char.job,
 			hair: char.hair,
 			face: char.face,
-			map: 0,
+			map: 0, // [임시] 모험가 0
 			meso: char.meso,
 			party: -1,
 			buddyCapacity: char.buddy_capacity,
@@ -42,7 +42,7 @@ class CharacterHelper {
 					use: 32,
 					setup: 32,
 					etc: 32,
-					cash: 32,
+					cash: 60,
 				},
 			},
 			// 장비를 제외한 나머지 아이템

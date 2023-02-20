@@ -81,11 +81,11 @@ class LoginPacket {
 		const packetMaker = new LittleEndianPacketWriter();
 		packetMaker.writeOpcode(Opcodes.serverOpcodes.LOGIN_STATUS);
 		packetMaker.writeByte(0);
-		packetMaker.writeInt(client.accId); // 계정 고유 ID
-		packetMaker.writeByte(client.gender > 0 ? 1 : 0); // Male: 0, Female: 1
-		packetMaker.writeByte(client.gm > 0 ? 1 : 0); // Admin byte - Find, Trade, etc.
+		packetMaker.writeInt(client.getAccId()); // 계정 고유 ID
+		packetMaker.writeByte(client.getGender() > 0 ? 1 : 0); // Male: 0, Female: 1
+		packetMaker.writeByte(client.isGm() ? 1 : 0); // Admin byte - Find, Trade, etc.
 		packetMaker.writeByte(0);
-		packetMaker.writeMapleAsciiString(client.accName); // 계정 로그인 ID
+		packetMaker.writeMapleAsciiString(client.getAccName()); // 계정 로그인 ID
 
 		//additional info
 		packetMaker.writeInt(0); // ?

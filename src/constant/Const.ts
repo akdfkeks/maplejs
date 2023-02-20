@@ -1,4 +1,5 @@
 import Item from "../client/inventory/Item";
+import { GenerateTypeFromConst } from "../lib/TypeGenerator";
 
 export const ItemType = {
 	EQUIPPED: -1, // 착용중인 장비
@@ -22,20 +23,13 @@ export const ItemLocation = {
 	MTS_TRANSFER: 9, //
 } as const;
 
-type ValueType = string | number | boolean;
-
-type TypeFromConst<T extends { [k: string]: ValueType } | ReadonlyArray<ValueType>> = T extends ReadonlyArray<ValueType>
-	? T[number]
-	: T extends { [k: string]: infer U }
-	? U
-	: never;
-
-export type ItemType = TypeFromConst<typeof ItemType>;
+export type ItemType = GenerateTypeFromConst<typeof ItemType>;
 
 export type InventoryType = ItemType;
+
 export function toInvType(n: number) {
 	if (n < -2 || n > 5) return InventoryType.UNDEFINED;
 	return n as InventoryType;
 }
 
-export type ItemLocation = TypeFromConst<typeof ItemLocation>;
+export type ItemLocation = GenerateTypeFromConst<typeof ItemLocation>;
